@@ -1,0 +1,13 @@
+{
+  "name": "museu-webgl",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "browser-sync start --server --files '*.html, js/*.js, glsl/*.glsl' --port 3000"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.1"
+  },
+  "devDependencies": {
+    "browser-sync": "^3.0.0"
+  }
+}
