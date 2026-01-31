@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web GL</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c2c2c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+    </style>
+    <script src="./libs/gl-matrix.min.js"></script>
+</head>
+
+<body>
+
+    <canvas id="c" width="1200" height="700"></canvas>
+
+    <script id="objVertexShader" type="x-shader/x-vertex">
+        #version 300 es
+        precision mediump float;
+
+        in vec3 position;
+        in vec3 normal;
+        in vec2 textureCoordinate;
+
+        uniform mat4 modelMatrix;
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+
+        out vec3 vFragPos;
+        out vec3 vNormal;
+        out vec2 vTexCoord;   // pass UVs forward
+
+        void main() {
+            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+            vFragPos = worldPos.xyz;
+            vNormal = mat3(transpose(inverse(modelMatrix))) * normal;
+            vTexCoord = textureCoordinate;   // keep it alive
+
+            gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+
+    </script>
+    <script id="objFragmentShader" type="x-shader/x-fragment">
+        #version 300 es
+        precision mediump float;
+
+        #define NUM_LIGHTS 3
+
+        uniform vec3 lightPosition[NUM_LIGHTS];
+        uniform vec3 lightColor[NUM_LIGHTS];
+
+        uniform vec3 cameraPosition;
+
+        uniform vec3 materialAmbient;
+        uniform vec3 materialDiffuse;
+        uniform vec3 materialSpecular;
+        uniform float materialShininess;
+
+        uniform sampler2D uTexture;
+
+        in vec3 vFragPos;
+        in vec3 vNormal;
+        in vec2 vTexCoord;
+
+        out vec4 finalColor;
+
+        void main() {
+            vec3 norm = normalize(vNormal);
+            vec3 viewDir = normalize(cameraPosition - vFragPos);
+
+            vec4 texColor = texture(uTexture, vTexCoord);
+
+            vec3 result = vec3(0.0);
+
+            for (int i = 0; i < NUM_LIGHTS; i++) {
+                // Ambient
+                vec3 ambient = 0.1 * materialAmbient * lightColor[i] * texColor.rgb;
+
+                // Diffuse
+                vec3 lightDir = normalize(lightPosition[i] - vFragPos);
+                float diff = max(dot(norm, lightDir), 0.0);
+                vec3 diffuse = diff * materialDiffuse * lightColor[i] * texColor.rgb;
+
+                // Specular
+                vec3 reflectDir = reflect(-lightDir, norm);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), materialShininess);
+                vec3 specular = spec * materialSpecular * lightColor[i] * texColor.rgb;
+
+                result += ambient + diffuse + specular;
+            }
+
+            finalColor = vec4(result, 1.0);
+        }
+
+    </script>
+
+
+
+    <script id="lightVertexShader" type="x-shader/x-vertex">
+        #version 300 es 
+        in vec3 position;
+
+        uniform vec3 offsets;
+
+        uniform mat4 modelMatrix;
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+
+        void main() {
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position.x + offsets[gl_InstanceID],position.yz, 1);
+        }
+    </script>
+    <script id="lightFragmentShader" type="x-shader/x-fragment">
+        #version 300 es
+        precision mediump float;
+
+        uniform vec4 color;
+        out vec4 finalColor;
+
+        void main() {
+            finalColor = color;
+        }
+    </script>
+
+    <script src="global.js"></script>
+    <script src="controls.js"></script>
+    <script src="utils.js"></script>
+    <script src="light.js"></script>
+    <script src="model.js"></script>
+    <script src="cube.js"></script>
+    <script src="plane.js"></script>
+    <script src="scene.js"></script>
+    <script src="obj.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
