@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Museu de Arte Abstrata | WebGL CG</title>
+    <title>Museu de Arte Abstrata | CG 2026</title>
     <style>
-        /* Estilo para ocupar a tela toda sem barras de rolagem */
         body, html {
             margin: 0;
             padding: 0;
@@ -13,54 +12,41 @@
             height: 100%;
             overflow: hidden;
             background-color: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        /* Canvas responsivo */
         #glCanvas {
             width: 100vw;
             height: 100vh;
             display: block;
         }
-
-        /* Interface simples de ajuda */
-        #ui-overlay {
+        #ui {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
             color: white;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 15px;
-            border-radius: 8px;
-            pointer-events: none; /* Não atrapalha cliques no canvas */
-            border: 1px solid #444;
-        }
-
-        kbd {
-            background: #444;
-            border-radius: 3px;
-            padding: 2px 5px;
-            font-size: 0.9em;
+            font-family: sans-serif;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <canvas id="glCanvas"></canvas>
-
-    <div id="ui-overlay">
-        <h2 style="margin-top:0">Galeria Abstrata</h2>
-        <p>Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> para caminhar.</p>
-        <p>Use as <b>Setas</b> para olhar ao redor.</p>
-        <hr style="border: 0; border-top: 1px solid #666;">
-        <small>Requisitos: WebGL Puro | Phong Lighting | Animação</small>
+    <div id="ui">
+        <b>Comandos:</b><br>
+        W, A, S, D - Caminhar<br>
+        Setas - Olhar
     </div>
 
-    <script src="js/gl-matrix.js"></script>
+    <canvas id="glCanvas"></canvas>
 
-    <script src="node_modules/gl-matrix/gl-matrix-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
 
-    <script src="js/geometry.js"></script>  <script src="js/shaders.js"></script>   <script src="js/renderer.js"></script>  <script src="js/main.js"></script>
+    <script src="js/geometry.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/shaders.js"></script>
+
+    <script src="js/main.js"></script>
 
 </body>
 </html>

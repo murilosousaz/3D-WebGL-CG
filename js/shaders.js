@@ -1,44 +1,37 @@
 const ShaderLoader = {
+    // Esta função busca o arquivo e retorna o texto puro
     async fetchSource(url) {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Não foi possível carregar o shader: ${url}`);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status} ao carregar ${url}`);
+            }
+            return await response.text();
+        } catch (err) {
+            console.error("Falha no fetch do shader:", err);
+            throw err;
         }
-        return await response.text();
     },
 
+    // Esta função organiza a compilação de ambos os shaders
     async createProgramFromFiles(gl, vsPath, fsPath) {
+        console.log("Buscando shaders...");
         const vsSource = await this.fetchSource(vsPath);
         const fsSource = await this.fetchSource(fsPath);
-
-        const vertexShader = this.compileShader(gl, gl.VERTEX_SHADER, vsSource);
-        const fragmentShader = this.compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        
+        // Aqui você chama as funções de compilação que estão no renderer.js
+        const vs = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
 
         const program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
         gl.linkProgram(program);
 
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            const info = gl.getProgramInfoLog(program);
-            gl.deleteProgram(program);
-            throw new Error(`Erro ao linkar o programa: ${info}`);
+            throw new Error(gl.getProgramInfoLog(program));
         }
-
+        console.log("Shaders carregados e compilados!");
         return program;
-    },
-
-    compileShader(gl, type, source) {
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            const info = gl.getShaderInfoLog(shader);
-            gl.deleteShader(shader);
-            throw new Error(`Erro ao compilar ${type === gl.VERTEX_SHADER ? 'Vertex' : 'Fragment'} Shader: ${info}`);
-        }
-
-        return shader;
     }
 };
