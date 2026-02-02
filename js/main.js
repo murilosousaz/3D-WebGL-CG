@@ -13,14 +13,43 @@ let buffers;
 let textures = {};
 
 // Configuração da Câmera
-let cameraPos = [0, 1.8, 10];
+let cameraPos = [0, 1.8, 15];
 let cameraFront = [0, 0, -1];
 let cameraUp = [0, 1, 0];
 let yaw = -90;
 let pitch = 0;
 
+// Controle do Mouse
+let mouseX = 0;
+let mouseY = 0;
+let sensitivity = 0.15;
+let isPointerLocked = false;
+
+// === FÍSICA ===
+let velocity = [0, 0, 0];
+let gravity = -20.0;
+let isGrounded = false;
+let jumpForce = 7.0;
+let friction = 0.85;
+let airResistance = 0.96;
+
+// Configurações do jogador
+const playerHeight = 1.8;
+const playerRadius = 0.4;
+const groundLevel = 0;
+const moveSpeed = 12.0;
+const acceleration = 0.8;
+
 // Luz
-let lightPosition = [0, 4, 0];
+let lightPositions = [
+    [0, 5, 0],
+    [15, 5, -10],
+    [-15, 5, -10],
+    [0, 5, -30]
+];
+
+// Lista de objetos colidíveis
+let collisionObjects = [];
 
 /**
  * Função de Inicialização
@@ -28,7 +57,6 @@ let lightPosition = [0, 4, 0];
 async function init() {
     const canvas = document.querySelector("#glCanvas");
     
-    // Ajuste de tamanho inicial
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -41,22 +69,22 @@ async function init() {
     console.log("WebGL inicializado. Carregando recursos...");
 
     try {
-        // 1. Carregar Shaders (Caminho relativo à raiz do servidor)
         program = await ShaderLoader.createProgramFromFiles(gl, 'glsl/vertex.glsl', 'glsl/fragment.glsl');
         
-        // 2. Inicializar Geometria (Funções do geometry.js)
         const cubeData = createCubeData();
         buffers = initBuffers(gl, cubeData);
 
-        // 3. Carregar Texturas (Requisito A-IV)
-        // Se as imagens não existirem, o renderer.js usará um pixel cinza
+        // Carregar texturas
         textures.floor = loadTexture(gl, 'assets/piso.jpg');
         textures.art = loadTexture(gl, 'assets/quadro.jpg');
+        textures.wall = loadTexture(gl, 'assets/parede.jpg');
+        textures.wood = loadTexture(gl, 'assets/madeira.jpg'); // Textura para bancos
 
-        // 4. Configurar Input
         setupInput();
+        initCollisionObjects();
 
-        console.log("Tudo pronto! Iniciando loop de renderização.");
+        console.log("Pronto! WASD: mover | Shift: correr | Espaço: pular");
+        
         requestAnimationFrame(render);
 
     } catch (e) {
@@ -65,12 +93,42 @@ async function init() {
 }
 
 /**
+ * Inicializa os objetos de colisão
+ */
+function initCollisionObjects() {
+    collisionObjects = [
+        // Paredes externas
+        { type: 'box', pos: [0, 4, -30], size: [40, 8, 0.3] },
+        { type: 'box', pos: [-15, 4, 30], size: [10, 8, 0.3] },
+        { type: 'box', pos: [15, 4, 30], size: [10, 8, 0.3] },
+        { type: 'box', pos: [-20, 4, 0], size: [0.3, 8, 60] },
+        { type: 'box', pos: [20, 4, 0], size: [0.3, 8, 60] },
+        
+        // Divisórias internas
+        { type: 'box', pos: [-10, 4, -10], size: [0.2, 8, 15] },
+        { type: 'box', pos: [10, 4, -10], size: [0.2, 8, 15] },
+        { type: 'box', pos: [0, 4, 10], size: [30, 8, 0.2] },
+        
+        // Pedestais
+        { type: 'box', pos: [0, 0.5, -15], size: [1.5, 1, 1.5] },
+        { type: 'box', pos: [7, 0.5, 0], size: [1.5, 1, 1.5] },
+        { type: 'box', pos: [-7, 0.5, 0], size: [1.5, 1, 1.5] },
+        { type: 'box', pos: [0, 0.5, 5], size: [2.5, 1, 2.5] }
+    ];
+}
+
+let lastTime = 0;
+
+/**
  * Loop de Renderização
  */
 function render(now) {
-    const time = now * 0.001;
+    now *= 0.001;
+    const deltaTime = now - lastTime;
+    lastTime = now;
 
-    // Ajustar Viewport caso a janela mude de tamanho
+    updatePhysics(deltaTime);
+
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0.05, 0.05, 0.1, 1.0); 
     gl.enable(gl.DEPTH_TEST);
@@ -78,49 +136,338 @@ function render(now) {
 
     gl.useProgram(program);
 
-    // Matrizes Principais
     const projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, 45 * Math.PI / 180, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
+    mat4.perspective(projectionMatrix, 45 * Math.PI / 180, gl.canvas.width / gl.canvas.height, 0.1, 200.0);
 
     const viewMatrix = mat4.create();
     let target = vec3.create();
     vec3.add(target, cameraPos, cameraFront);
     mat4.lookAt(viewMatrix, cameraPos, target, cameraUp);
 
-    // Atualizar posição da luz (ela gira no teto)
-    lightPosition = [Math.sin(time) * 5, 4.0, Math.cos(time) * 5];
+    lightPositions[0] = [Math.sin(now) * 8, 5.0, Math.cos(now) * 8];
 
-    // Enviar Uniforms Globais
     setUniformMatrix4fv(gl, program, "uProjectionMatrix", projectionMatrix);
     setUniformMatrix4fv(gl, program, "uViewMatrix", viewMatrix);
-    setUniform3f(gl, program, "uLightPos", lightPosition);
+    setUniform3f(gl, program, "uLightPos", lightPositions[0]);
     setUniform3f(gl, program, "uViewPos", cameraPos);
     setUniform3f(gl, program, "uLightColor", [1.0, 1.0, 0.9]);
 
-    // --- DESENHO DO CENÁRIO ---
-
-    // 1. Chão
-    drawObject([0, 0, 0], [20, 0.1, 20], [0, 0, 0], textures.floor, true);
-
-    // 2. Parede de Fundo
-    drawObject([0, 5, -10], [20, 10, 0.5], [0, 0, 0], null, false, [0.7, 0.7, 0.7]);
-
-    // 3. Quadro Abstrato (Texturizado)
-    drawObject([0, 3, -9.4], [4, 4, 0.1], [0, 0, 0], textures.art, true);
-
-    // 4. Escultura Animada (Requisito A-III)
-    const rot = time;
-    drawObject([5, 2, -5], [1, 2, 1], [rot, rot, 0], null, false, [1.0, 0.2, 0.2]);
-
-    // 5. Lâmpada (Cubo que representa a luz)
-    drawObject(lightPosition, [0.2, 0.2, 0.2], [0, 0, 0], null, false, [1, 1, 1]);
+    drawMuseum(now);
 
     requestAnimationFrame(render);
 }
 
 /**
- * Função Auxiliar de Desenho (Usa funções do renderer.js)
+ * Sistema de Física
  */
+function updatePhysics(deltaTime) {
+    deltaTime = Math.min(deltaTime, 0.05);
+
+    if (!isGrounded) {
+        velocity[1] += gravity * deltaTime;
+    }
+
+    velocity[0] *= airResistance;
+    velocity[2] *= airResistance;
+
+    const newPos = [
+        cameraPos[0] + velocity[0] * deltaTime,
+        cameraPos[1] + velocity[1] * deltaTime,
+        cameraPos[2] + velocity[2] * deltaTime
+    ];
+
+    if (newPos[1] - playerHeight <= groundLevel) {
+        newPos[1] = groundLevel + playerHeight;
+        velocity[1] = 0;
+        isGrounded = true;
+    } else {
+        isGrounded = false;
+    }
+
+    const resolvedPos = resolveCollisions(newPos);
+    
+    cameraPos[0] = resolvedPos[0];
+    cameraPos[1] = resolvedPos[1];
+    cameraPos[2] = resolvedPos[2];
+
+    if (isGrounded) {
+        velocity[0] *= friction;
+        velocity[2] *= friction;
+    }
+}
+
+/**
+ * Resolve colisões com objetos
+ */
+function resolveCollisions(pos) {
+    let resolvedPos = [...pos];
+
+    for (let obj of collisionObjects) {
+        if (obj.type === 'box') {
+            const collision = checkBoxCollision(resolvedPos, obj);
+            if (collision) {
+                resolvedPos = collision.resolvedPos;
+                
+                if (Math.abs(collision.normal[0]) > 0.5) velocity[0] = 0;
+                if (Math.abs(collision.normal[2]) > 0.5) velocity[2] = 0;
+            }
+        }
+    }
+
+    return resolvedPos;
+}
+
+/**
+ * Verifica colisão com caixa (AABB)
+ */
+function checkBoxCollision(playerPos, box) {
+    const halfSize = [box.size[0] / 2, box.size[1] / 2, box.size[2] / 2];
+    
+    const closest = [
+        Math.max(box.pos[0] - halfSize[0], Math.min(playerPos[0], box.pos[0] + halfSize[0])),
+        Math.max(box.pos[1] - halfSize[1], Math.min(playerPos[1], box.pos[1] + halfSize[1])),
+        Math.max(box.pos[2] - halfSize[2], Math.min(playerPos[2], box.pos[2] + halfSize[2]))
+    ];
+
+    const distance = Math.sqrt(
+        Math.pow(playerPos[0] - closest[0], 2) +
+        Math.pow(playerPos[1] - closest[1], 2) +
+        Math.pow(playerPos[2] - closest[2], 2)
+    );
+
+    if (distance < playerRadius) {
+        let normal = [
+            playerPos[0] - closest[0],
+            playerPos[1] - closest[1],
+            playerPos[2] - closest[2]
+        ];
+
+        const len = Math.sqrt(normal[0]**2 + normal[1]**2 + normal[2]**2);
+        if (len > 0) {
+            normal[0] /= len;
+            normal[1] /= len;
+            normal[2] /= len;
+        }
+
+        const penetration = playerRadius - distance;
+        const resolvedPos = [
+            playerPos[0] + normal[0] * penetration,
+            playerPos[1] + normal[1] * penetration,
+            playerPos[2] + normal[2] * penetration
+        ];
+
+        return { resolvedPos, normal };
+    }
+
+    return null;
+}
+
+/**
+ * Desenha todo o ambiente do museu
+ */
+function drawMuseum(time) {
+    // === ESTRUTURA BÁSICA ===
+    drawObject([0, 0, 0], [40, 0.1, 60], [0, 0, 0], textures.floor, true);
+    drawObject([0, 8, 0], [40, 0.1, 60], [0, 0, 0], null, false, [0.9, 0.9, 0.9]);
+    
+    // Paredes externas
+    drawObject([0, 4, -30], [40, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+    drawObject([-15, 4, 30], [10, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+    drawObject([15, 4, 30], [10, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+    drawObject([0, 7, 30], [10, 2, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+    drawObject([-20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+    drawObject([20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+    
+    // Divisórias internas
+    drawObject([-10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
+    drawObject([10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
+    drawObject([0, 4, 10], [30, 8, 0.2], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
+    
+    // === GALERIA PAREDE DE FUNDO (muito mais quadros) ===
+    
+    // Linha superior de quadros pequenos
+    for (let i = -3; i <= 3; i++) {
+        if (i !== 0) { // Pula o centro
+            drawObject([i * 5, 6.5, -29.5], [2, 1.5, 0.1], [0, 0, 0], textures.art, true);
+            drawFrame([i * 5, 6.5, -29.4], [2.2, 1.7, 0.15]);
+        }
+    }
+    
+    // Linha do meio - Quadro grande central
+    drawObject([0, 4, -29.5], [6, 5, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([0, 4, -29.4], [6.3, 5.3, 0.15]);
+    
+    // Quadros médios ao lado do grande
+    drawObject([-10, 4, -29.5], [4, 3, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([-10, 4, -29.4], [4.3, 3.3, 0.15]);
+    
+    drawObject([10, 4, -29.5], [4, 3, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([10, 4, -29.4], [4.3, 3.3, 0.15]);
+    
+    // Quadros nas extremidades
+    drawObject([-16, 4, -29.5], [3, 2.5, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([-16, 4, -29.4], [3.2, 2.7, 0.15]);
+    
+    drawObject([16, 4, -29.5], [3, 2.5, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([16, 4, -29.4], [3.2, 2.7, 0.15]);
+    
+    // Linha inferior de quadros
+    drawObject([-12, 2, -29.5], [2.5, 2, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([-12, 2, -29.4], [2.7, 2.2, 0.15]);
+    
+    drawObject([12, 2, -29.5], [2.5, 2, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([12, 2, -29.4], [2.7, 2.2, 0.15]);
+    
+    // === GALERIA LATERAL ESQUERDA (mais quadros) ===
+    
+    // Sequência vertical completa
+    for (let z = -20; z <= 20; z += 5) {
+        drawObject([-19.5, 3.5, z], [0.1, 3, 3.5], [0, 0, 0], textures.art, true);
+        drawFrame([-19.4, 3.5, z], [0.15, 3.3, 3.8]);
+    }
+    
+    // Quadros pequenos intercalados
+    for (let z = -17.5; z <= 17.5; z += 5) {
+        drawObject([-19.5, 6, z], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
+        drawFrame([-19.4, 6, z], [0.15, 1.7, 2.2]);
+    }
+    
+    // === GALERIA LATERAL DIREITA (mais quadros) ===
+    
+    // Sequência vertical completa
+    for (let z = -20; z <= 20; z += 5) {
+        drawObject([19.5, 3.5, z], [0.1, 3, 3.5], [0, 0, 0], textures.art, true);
+        drawFrame([19.4, 3.5, z], [0.15, 3.3, 3.8]);
+    }
+    
+    // Quadros pequenos intercalados
+    for (let z = -17.5; z <= 17.5; z += 5) {
+        drawObject([19.5, 6, z], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
+        drawFrame([19.4, 6, z], [0.15, 1.7, 2.2]);
+    }
+    
+    // === DIVISÓRIAS CENTRAIS COM QUADROS (ambos os lados) ===
+    
+    // Divisória esquerda - lado frontal
+    drawObject([-9.9, 3.5, -5], [0.1, 3, 4], [0, 0, 0], textures.art, true);
+    drawFrame([-9.8, 3.5, -5], [0.15, 3.3, 4.3]);
+    
+    drawObject([-9.9, 6, -5], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
+    drawFrame([-9.8, 6, -5], [0.15, 1.7, 2.2]);
+    
+    // Divisória esquerda - lado traseiro
+    drawObject([-10.1, 3.5, -15], [0.1, 3, 4], [0, 0, 0], textures.art, true);
+    drawFrame([-10.2, 3.5, -15], [0.15, 3.3, 4.3]);
+    
+    drawObject([-10.1, 6, -15], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
+    drawFrame([-10.2, 6, -15], [0.15, 1.7, 2.2]);
+    
+    drawObject([-10.1, 3.5, -10], [0.1, 3, 2.5], [0, 0, 0], textures.art, true);
+    drawFrame([-10.2, 3.5, -10], [0.15, 3.3, 2.7]);
+    
+    // Divisória direita - lado frontal
+    drawObject([9.9, 3.5, -5], [0.1, 3, 4], [0, 0, 0], textures.art, true);
+    drawFrame([9.8, 3.5, -5], [0.15, 3.3, 4.3]);
+    
+    drawObject([9.9, 6, -5], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
+    drawFrame([9.8, 6, -5], [0.15, 1.7, 2.2]);
+    
+    // Divisória direita - lado traseiro
+    drawObject([10.1, 3.5, -15], [0.1, 3, 4], [0, 0, 0], textures.art, true);
+    drawFrame([10.2, 3.5, -15], [0.15, 3.3, 4.3]);
+    
+    drawObject([10.1, 6, -15], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
+    drawFrame([10.2, 6, -15], [0.15, 1.7, 2.2]);
+    
+    drawObject([10.1, 3.5, -10], [0.1, 3, 2.5], [0, 0, 0], textures.art, true);
+    drawFrame([10.2, 3.5, -10], [0.15, 3.3, 2.7]);
+    
+    // === PAREDE FRONTAL - QUADROS NA ENTRADA ===
+    
+    // Lado esquerdo da entrada
+    drawObject([-17, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([-17, 4, 29.6], [2.7, 3.2, 0.15]);
+    
+    drawObject([-12, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([-12, 4, 29.6], [2.7, 3.2, 0.15]);
+    
+    // Lado direito da entrada
+    drawObject([17, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([17, 4, 29.6], [2.7, 3.2, 0.15]);
+    
+    drawObject([12, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
+    drawFrame([12, 4, 29.6], [2.7, 3.2, 0.15]);
+    
+    // === ESCULTURAS ANIMADAS ===
+    
+    const rot1 = time * 0.5;
+    drawObject([0, 2, -15], [1, 3, 1], [0, rot1, 0], null, false, [0.8, 0.3, 0.2]);
+    drawPedestal([0, 0.5, -15], [1.5, 1, 1.5]);
+    
+    const scale2 = 1 + Math.sin(time * 2) * 0.2;
+    drawObject([7, 1.5, 0], [scale2, scale2 * 2, scale2], [0, 0, 0], null, false, [0.2, 0.6, 0.8]);
+    drawPedestal([7, 0.5, 0], [1.5, 1, 1.5]);
+    
+    const rot3 = Math.sin(time) * 0.5;
+    drawObject([-7, 2, 0], [0.8, 3.5, 0.8], [rot3, 0, rot3], null, false, [0.9, 0.7, 0.1]);
+    drawPedestal([-7, 0.5, 0], [1.5, 1, 1.5]);
+    
+    drawObject([0, 1.5, 5], [2, 0.5, 2], [time * 0.3, 0, 0], null, false, [0.5, 0.5, 0.5]);
+    drawPedestal([0, 0.5, 5], [2.5, 1, 2.5]);
+    
+    // === BANCOS COM TEXTURA DE MADEIRA ===
+    
+    drawBench([0, 0.4, 0], 4);
+    drawBench([-8, 0.4, 20], 3);
+    drawBench([8, 0.4, 20], 3);
+    drawBench([0, 0.4, -25], 5);
+    drawBench([-15, 0.4, -20], 3);
+    drawBench([15, 0.4, -20], 3);
+    
+    // === ILUMINAÇÃO ===
+    
+    for (let i = 0; i < lightPositions.length; i++) {
+        drawObject(lightPositions[i], [0.3, 0.3, 0.3], [0, 0, 0], null, false, [1, 1, 0.9]);
+        drawObject([lightPositions[i][0], lightPositions[i][1] - 0.5, lightPositions[i][2]], 
+                   [0.5, 0.1, 0.5], [0, 0, 0], null, false, [1, 1, 0.7]);
+    }
+    
+    drawSpotLight([-15, 6, -29], [0, 0.8, 0.8]);
+    drawSpotLight([15, 6, -29], [0.8, 0.8, 0]);
+    drawSpotLight([-19, 5, 0], [0.8, 0.8, 0]);
+    drawSpotLight([19, 5, 0], [0.8, 0, 0.8]);
+}
+
+function drawFrame(pos, scale, color = [0.2, 0.15, 0.1]) {
+    drawObject(pos, scale, [0, 0, 0], null, false, color);
+}
+
+function drawPedestal(pos, scale, color = [0.6, 0.6, 0.6]) {
+    drawObject(pos, scale, [0, 0, 0], null, false, color);
+}
+
+/**
+ * Desenha um banco com textura de madeira
+ */
+function drawBench(pos, width) {
+    // Assento com textura de madeira
+    drawObject([pos[0], pos[1], pos[2]], [width, 0.1, 0.8], [0, 0, 0], textures.wood, true);
+    
+    // Encosto com textura de madeira
+    drawObject([pos[0], pos[1] + 0.4, pos[2] - 0.35], [width, 0.7, 0.1], [0, 0, 0], textures.wood, true);
+    
+    // Pernas (madeira mais escura)
+    const darkWood = [0.3, 0.2, 0.1];
+    drawObject([pos[0] - width/2 + 0.2, pos[1] - 0.2, pos[2] - 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+    drawObject([pos[0] + width/2 - 0.2, pos[1] - 0.2, pos[2] - 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+    drawObject([pos[0] - width/2 + 0.2, pos[1] - 0.2, pos[2] + 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+    drawObject([pos[0] + width/2 - 0.2, pos[1] - 0.2, pos[2] + 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+}
+
+function drawSpotLight(pos, color) {
+    drawObject(pos, [0.2, 0.2, 0.2], [0, 0, 0], null, false, color);
+}
+
 function drawObject(pos, scale, rot, texture, useTex, color = [1,1,1]) {
     const modelMatrix = mat4.create();
     mat4.translate(modelMatrix, modelMatrix, pos);
@@ -150,28 +497,78 @@ function drawObject(pos, scale, rot, texture, useTex, color = [1,1,1]) {
 }
 
 /**
- * Controle de Teclado
+ * Controle de Teclado e Mouse
  */
 function setupInput() {
+    const canvas = document.querySelector("#glCanvas");
+    
+    canvas.addEventListener('click', () => {
+        canvas.requestPointerLock();
+    });
+    
+    document.addEventListener('pointerlockchange', () => {
+        isPointerLocked = document.pointerLockElement === canvas;
+        if (isPointerLocked) {
+            console.log("🎮 Mouse capturado! WASD: mover | Shift: correr | Espaço: pular | ESC: sair");
+        }
+    });
+    
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isPointerLocked) return;
+        
+        yaw += (e.movementX || 0) * sensitivity;
+        pitch -= (e.movementY || 0) * sensitivity;
+        pitch = Math.max(-89, Math.min(89, pitch));
+        
+        updateCamera();
+    });
+    
+    const keys = {};
+    
     window.addEventListener('keydown', (e) => {
-        const speed = 0.2;
+        keys[e.key.toLowerCase()] = true;
+        
+        if (e.key === ' ' && isGrounded) {
+            velocity[1] = jumpForce;
+            isGrounded = false;
+        }
+    });
+    
+    window.addEventListener('keyup', (e) => {
+        keys[e.key.toLowerCase()] = false;
+    });
+    
+    function updateMovement() {
+        const currentSpeed = keys['shift'] ? moveSpeed * 2 : moveSpeed;
+        
         let forward = vec3.create();
-        vec3.normalize(forward, [cameraFront[0], 0, cameraFront[2]]); // Movimento no plano
+        vec3.normalize(forward, [cameraFront[0], 0, cameraFront[2]]);
         
         let right = vec3.create();
         vec3.cross(right, forward, cameraUp);
-
-        switch(e.key.toLowerCase()) {
-            case 'w': vec3.scaleAndAdd(cameraPos, cameraPos, forward, speed); break;
-            case 's': vec3.scaleAndAdd(cameraPos, cameraPos, forward, -speed); break;
-            case 'a': vec3.scaleAndAdd(cameraPos, cameraPos, right, -speed); break;
-            case 'd': vec3.scaleAndAdd(cameraPos, cameraPos, right, speed); break;
-            case 'arrowleft': yaw -= 2; break;
-            case 'arrowright': yaw += 2; break;
+        
+        if (keys['w']) {
+            velocity[0] += forward[0] * currentSpeed * acceleration;
+            velocity[2] += forward[2] * currentSpeed * acceleration;
         }
-        updateCamera();
-    });
-
+        if (keys['s']) {
+            velocity[0] -= forward[0] * currentSpeed * acceleration;
+            velocity[2] -= forward[2] * currentSpeed * acceleration;
+        }
+        if (keys['a']) {
+            velocity[0] -= right[0] * currentSpeed * acceleration;
+            velocity[2] -= right[2] * currentSpeed * acceleration;
+        }
+        if (keys['d']) {
+            velocity[0] += right[0] * currentSpeed * acceleration;
+            velocity[2] += right[2] * currentSpeed * acceleration;
+        }
+        
+        requestAnimationFrame(updateMovement);
+    }
+    
+    updateMovement();
+    
     window.addEventListener('resize', () => {
         gl.canvas.width = window.innerWidth;
         gl.canvas.height = window.innerHeight;
