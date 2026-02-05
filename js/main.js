@@ -1,7 +1,17 @@
+import { loadOBJ, parseOBJ } from './obj_loader.js';
+import ShaderLoader from './shader_loader.js';
+import {createCubeData} from './geometry.js';
+import { loadTexture, initBuffers, setUniformMatrix4fv, isPowerOf2, setUniformMatrix3fv, setUniform3f, setUniform1f, setUniform1i, bindBuffers } from './utils.js';
+
+
+
+
+const toRadian = window.glMatrix.glMatrix.toRadian;
 const mat4 = window.mat4 || (window.glMatrix ? window.glMatrix.mat4 : null);
 const mat3 = window.mat3 || (window.glMatrix ? window.glMatrix.mat3 : null);
 const vec3 = window.vec3 || (window.glMatrix ? window.glMatrix.vec3 : null);
 const glMatrix = window.glMatrix;
+const angle = toRadian(45);
 
 if (!mat4 || !vec3) {
     console.error("Erro: gl-matrix não foi carregada corretamente. Verifique o caminho no index.html.");
@@ -11,6 +21,8 @@ let gl;
 let program;
 let buffers;
 let textures = {};
+let objModels = {}; // Armazena os modelos OBJ carregados
+let objTextures = {}; // Armazena as texturas dos modelos OBJ
 
 // Configuração da Câmera
 let cameraPos = [0, 1.8, 15];
@@ -74,11 +86,26 @@ async function init() {
         const cubeData = createCubeData();
         buffers = initBuffers(gl, cubeData);
 
-        // Carregar texturas
+        // Carregar texturas do museu
         textures.floor = loadTexture(gl, 'assets/piso.jpg');
         textures.art = loadTexture(gl, 'assets/quadro.jpg');
         textures.wall = loadTexture(gl, 'assets/parede.jpg');
-        textures.wood = loadTexture(gl, 'assets/madeira.jpg'); // Textura para bancos
+        textures.wood = loadTexture(gl, 'assets/madeira.jpg');
+
+        // === CARREGAR MODELO OBJ DA LUA ===
+        console.log("Carregando modelo da lua...");
+        const moonData = await loadOBJ('assets/moon.obj');
+        if (moonData) {
+            objModels.moon = initOBJBuffers(gl, moonData);
+            
+            // Carregar texturas da lua
+            objTextures.moonDiffuse = loadTexture(gl, 'assets/moon_00_0.png');
+            objTextures.moonSpecular = loadTexture(gl, 'assets/moon_00_0_sp.png');
+            
+            console.log("✓ Modelo da lua carregado com sucesso!");
+        } else {
+            console.error("✗ Erro ao carregar modelo da lua");
+        }
 
         setupInput();
         initCollisionObjects();
@@ -113,8 +140,46 @@ function initCollisionObjects() {
         { type: 'box', pos: [0, 0.5, -15], size: [1.5, 1, 1.5] },
         { type: 'box', pos: [7, 0.5, 0], size: [1.5, 1, 1.5] },
         { type: 'box', pos: [-7, 0.5, 0], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [0, 0.5, 5], size: [2.5, 1, 2.5] }
+        { type: 'box', pos: [0, 0.5, 5], size: [2.5, 1, 2.5] },
+        
+        // Pedestais das luas
+        { type: 'box', pos: [0, 0.5, -20], size: [2, 1, 2] },
+        { type: 'box', pos: [-12, 0.5, -25], size: [1.5, 1, 1.5] },
+        { type: 'box', pos: [12, 0.5, -25], size: [1.5, 1, 1.5] }
     ];
+}
+
+/**
+ * Inicializa buffers para um modelo OBJ
+ */
+function initOBJBuffers(gl, objData) {
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, objData.positions, gl.STATIC_DRAW);
+
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, objData.normals, gl.STATIC_DRAW);
+
+    const uvBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, objData.uvs, gl.STATIC_DRAW);
+
+    let indexBuffer = null;
+    if (objData.indices) {
+        indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, objData.indices, gl.STATIC_DRAW);
+    }
+
+    return {
+        position: positionBuffer,
+        normal: normalBuffer,
+        uv: uvBuffer,
+        indices: indexBuffer,
+        count: objData.count,
+        indexCount: objData.indices ? objData.indices.length : 0
+    };
 }
 
 let lastTime = 0;
@@ -415,6 +480,44 @@ function drawMuseum(time) {
     drawObject([0, 1.5, 5], [2, 0.5, 2], [time * 0.3, 0, 0], null, false, [0.5, 0.5, 0.5]);
     drawPedestal([0, 0.5, 5], [2.5, 1, 2.5]);
     
+    // === MODELOS DA LUA (OBJ) ===
+    if (objModels.moon) {
+        // Lua principal girando lentamente no centro do museu
+        const moonRotation = time * 0.3;
+        const moonHeight = 3 + Math.sin(time * 0.5) * 0.5; // Flutua suavemente
+        
+        drawOBJModel(
+            objModels.moon,
+            [0, moonHeight, -20], // Posição
+            [2, 2, 2], // Escala
+            [0, moonRotation, 0], // Rotação
+            objTextures.moonDiffuse // Textura
+        );
+        
+        // Pedestal para a lua principal
+        drawPedestal([0, 0.5, -20], [2, 1, 2]);
+        
+        // Lua secundária esquerda
+        drawOBJModel(
+            objModels.moon,
+            [-12, 2.5, -25],
+            [1.5, 1.5, 1.5],
+            [time * 0.2, time * 0.4, 0],
+            objTextures.moonDiffuse
+        );
+        drawPedestal([-12, 0.5, -25], [1.5, 1, 1.5]);
+        
+        // Lua secundária direita
+        drawOBJModel(
+            objModels.moon,
+            [12, 2.5, -25],
+            [1.5, 1.5, 1.5],
+            [0, time * -0.3, time * 0.1],
+            objTextures.moonDiffuse
+        );
+        drawPedestal([12, 0.5, -25], [1.5, 1, 1.5]);
+    }
+    
     // === BANCOS COM TEXTURA DE MADEIRA ===
     
     drawBench([0, 0.4, 0], 4);
@@ -494,6 +597,60 @@ function drawObject(pos, scale, rot, texture, useTex, color = [1,1,1]) {
 
     bindBuffers(gl, program, buffers);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+
+/**
+ * Desenha um modelo OBJ
+ */
+function drawOBJModel(model, pos, scale, rot, texture, color = [1, 1, 1]) {
+    if (!model) return;
+
+    const modelMatrix = mat4.create();
+    mat4.translate(modelMatrix, modelMatrix, pos);
+    mat4.rotateX(modelMatrix, modelMatrix, rot[0]);
+    mat4.rotateY(modelMatrix, modelMatrix, rot[1]);
+    mat4.rotateZ(modelMatrix, modelMatrix, rot[2]);
+    mat4.scale(modelMatrix, modelMatrix, scale);
+
+    const normalMatrix = mat3.create();
+    mat3.fromMat4(normalMatrix, modelMatrix);
+    mat3.invert(normalMatrix, normalMatrix);
+    mat3.transpose(normalMatrix, normalMatrix);
+
+    setUniformMatrix4fv(gl, program, "uModelMatrix", modelMatrix);
+    setUniformMatrix3fv(gl, program, "uNormalMatrix", normalMatrix);
+    setUniform1i(gl, program, "uUseTexture", texture ? 1 : 0);
+    setUniform3f(gl, program, "uObjectColor", color);
+
+    if (texture) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        setUniform1i(gl, program, "uSampler", 0);
+    }
+
+    // Bind dos buffers do OBJ
+    const posLoc = gl.getAttribLocation(program, "aPosition");
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.position);
+    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(posLoc);
+
+    const normalLoc = gl.getAttribLocation(program, "aNormal");
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.normal);
+    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normalLoc);
+
+    const uvLoc = gl.getAttribLocation(program, "aTexCoord");
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.uv);
+    gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(uvLoc);
+
+    // Desenhar
+    if (model.indices) {
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indices);
+        gl.drawElements(gl.TRIANGLES, model.indexCount, gl.UNSIGNED_SHORT, 0);
+    } else {
+        gl.drawArrays(gl.TRIANGLES, 0, model.count);
+    }
 }
 
 /**
@@ -577,9 +734,9 @@ function setupInput() {
 
 function updateCamera() {
     let f = [
-        Math.cos(glMatrix.toRadian(yaw)) * Math.cos(glMatrix.toRadian(pitch)),
-        Math.sin(glMatrix.toRadian(pitch)),
-        Math.sin(glMatrix.toRadian(yaw)) * Math.cos(glMatrix.toRadian(pitch))
+        Math.cos(toRadian(yaw)) * Math.cos(toRadian(pitch)),
+        Math.sin(toRadian(pitch)),
+        Math.sin(toRadian(yaw)) * Math.cos(toRadian(pitch))
     ];
     vec3.normalize(cameraFront, f);
 }
