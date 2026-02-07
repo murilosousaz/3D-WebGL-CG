@@ -4,396 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Museu Virtual 3D | WebGL</title>
-    <link rel="icon" href="data:,">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        #glCanvas {
-            width: 100vw;
-            height: 100vh;
-            display: block;
-            cursor: pointer;
-        }
-
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #fff;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(10px);
-            padding: 20px 25px;
-            border-radius: 12px;
-            pointer-events: none;
-            font-size: 14px;
-            line-height: 1.8;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-            max-width: 320px;
-            z-index: 100;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        #ui h2 {
-            margin: 0 0 15px 0;
-            font-size: 20px;
-            font-weight: 600;
-            color: #4da6ff;
-            border-bottom: 2px solid #4da6ff;
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #ui .controls {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 10px 15px;
-            margin-top: 12px;
-        }
-
-        #ui .key {
-            background: rgba(255, 255, 255, 0.12);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 600;
-            text-align: center;
-            min-width: 70px;
-            font-size: 13px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            letter-spacing: 0.5px;
-        }
-
-        #ui .action {
-            color: #e0e0e0;
-            display: flex;
-            align-items: center;
-        }
-
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 24px;
-            font-weight: 500;
-            text-align: center;
-            z-index: 200;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 50px 80px;
-            border-radius: 20px;
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        #loading.hidden {
-            display: none;
-        }
-
-        .spinner {
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-top: 5px solid #4da6ff;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 25px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        #loading p {
-            margin: 0;
-            font-size: 18px;
-            color: #bbb;
-        }
-
-        #fps {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: #0f0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(10px);
-            padding: 12px 18px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 100;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-            min-width: 90px;
-            text-align: center;
-        }
-
-        #info {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #fff;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 13px;
-            pointer-events: none;
-            z-index: 100;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-            text-align: center;
-        }
-
-        #info.hidden {
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        @media (max-width: 768px) {
-            #ui {
-                font-size: 12px;
-                padding: 15px 20px;
-                max-width: 280px;
-                top: 10px;
-                left: 10px;
-            }
-
-            #ui h2 {
-                font-size: 18px;
-            }
-
-            #ui .key {
-                min-width: 60px;
-                font-size: 11px;
-                padding: 5px 10px;
-            }
-
-            #fps {
-                top: 10px;
-                right: 10px;
-                font-size: 14px;
-                padding: 10px 14px;
-            }
-
-            #loading {
-                padding: 40px 60px;
-                font-size: 20px;
-            }
-
-            .spinner {
-                width: 50px;
-                height: 50px;
-            }
-
-            #info {
-                font-size: 11px;
-                padding: 10px 20px;
-                bottom: 10px;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { width: 100%; height: 100vh; overflow: hidden; background: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #glCanvas { width: 100vw; height: 100vh; display: block; cursor: crosshair; }
+        #ui { position: absolute; top: 20px; left: 20px; color: #fff; background: rgba(15, 15, 25, 0.85); backdrop-filter: blur(15px); padding: 20px 25px; border-radius: 16px; pointer-events: none; font-size: 14px; line-height: 1.8; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7); max-width: 350px; z-index: 100; border: 1px solid rgba(77, 166, 255, 0.3); }
+        #ui h2 { margin: 0 0 15px 0; font-size: 22px; font-weight: 600; color: #4da6ff; border-bottom: 2px solid #4da6ff; padding-bottom: 10px; }
+        #ui .controls { display: grid; grid-template-columns: auto 1fr; gap: 12px 15px; margin-top: 12px; }
+        #ui .key { background: linear-gradient(135deg, rgba(77, 166, 255, 0.2), rgba(77, 166, 255, 0.1)); padding: 8px 14px; border-radius: 8px; font-weight: 600; text-align: center; min-width: 80px; font-size: 13px; border: 1px solid rgba(77, 166, 255, 0.4); }
+        #ui .action { color: #e8e8e8; display: flex; align-items: center; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 24px; text-align: center; z-index: 200; background: rgba(15, 15, 25, 0.95); padding: 50px 80px; border-radius: 20px; box-shadow: 0 15px 60px rgba(0, 0, 0, 0.9); }
+        #loading.hidden { display: none; }
+        .spinner { border: 5px solid rgba(77, 166, 255, 0.1); border-top: 5px solid #4da6ff; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 25px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading p { margin: 0; font-size: 18px; color: #bbb; }
+        #fps { position: absolute; top: 20px; right: 20px; color: #0f0; background: rgba(0, 0, 0, 0.85); padding: 15px 22px; border-radius: 12px; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; pointer-events: none; z-index: 100; }
+        #info { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(15, 15, 25, 0.8); padding: 15px 30px; border-radius: 12px; font-size: 14px; pointer-events: none; z-index: 100; text-align: center; transition: opacity 0.5s; }
+        #info.hidden { opacity: 0; }
     </style>
 </head>
 <body>
-
-    <!-- Canvas WebGL -->
     <canvas id="glCanvas"></canvas>
-
-    <!-- UI de Controles -->
     <div id="ui">
         <h2>🎮 Controles</h2>
         <div class="controls">
-            <span class="key">W A S D</span>
-            <span class="action">Mover</span>
-            
-            <span class="key">Mouse</span>
-            <span class="action">Olhar ao redor</span>
-            
-            <span class="key">Shift</span>
-            <span class="action">Correr</span>
-            
-            <span class="key">Espaço</span>
-            <span class="action">Pular</span>
-            
-            <span class="key">ESC</span>
-            <span class="action">Liberar mouse</span>
+            <span class="key">W A S D</span><span class="action">Mover</span>
+            <span class="key">Mouse</span><span class="action">Olhar</span>
+            <span class="key">Shift</span><span class="action">Correr</span>
+            <span class="key">Espaço</span><span class="action">Pular</span>
+            <span class="key">ESC</span><span class="action">Liberar mouse</span>
         </div>
     </div>
-
-    <!-- FPS Counter -->
     <div id="fps">FPS: --</div>
-
-    <!-- Info Inferior -->
-    <div id="info">
-        💡 Clique na tela para capturar o mouse e explorar o museu
-    </div>
-
-    <!-- Tela de Carregamento -->
-    <div id="loading">
-        <div class="spinner"></div>
-        <p>Carregando Museu...</p>
-    </div>
-
-    <!-- Bibliotecas Externas -->
-    <script src="/js/utils/gl-matrix.js"></script>
-    <!-- Main com suporte a módulos ES6 -->
+    <div id="info">💡 Clique na tela para começar</div>
+    <div id="loading"><div class="spinner"></div><p>Carregando...</p></div>
+    
+    <script src="js/utils/gl-matrix.js"></script>
     <script type="module" src="js/main.js"></script>
-
-    <!-- Scripts auxiliares -->
+    
     <script>
-        // ====================================
-        // Remove tela de loading
-        // ====================================
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const loading = document.getElementById('loading');
-                if (loading) {
-                    loading.classList.add('hidden');
-                }
-            }, 1500);
-        });
-
-        // ====================================
-        // Esconde info após alguns segundos
-        // ====================================
-        setTimeout(() => {
-            const info = document.getElementById('info');
-            if (info) {
-                info.classList.add('hidden');
-            }
-        }, 8000);
-
-        // ====================================
-        // FPS Counter em tempo real
-        // ====================================
-        let lastTime = performance.now();
-        let frames = 0;
-        
+        // FPS Counter
+        let lastTime = performance.now(), frames = 0;
         function updateFPS() {
             frames++;
-            const currentTime = performance.now();
-            
-            if (currentTime >= lastTime + 1000) {
-                const fps = Math.round((frames * 1000) / (currentTime - lastTime));
-                const fpsElement = document.getElementById('fps');
-                
-                if (fpsElement) {
-                    fpsElement.textContent = `FPS: ${fps}`;
-                    
-                    // Muda cor baseado no desempenho
-                    if (fps >= 55) {
-                        fpsElement.style.color = '#0f0'; // Verde - Ótimo
-                    } else if (fps >= 45) {
-                        fpsElement.style.color = '#9f0'; // Verde claro - Bom
-                    } else if (fps >= 30) {
-                        fpsElement.style.color = '#ff0'; // Amarelo - Aceitável
-                    } else if (fps >= 20) {
-                        fpsElement.style.color = '#f90'; // Laranja - Ruim
-                    } else {
-                        fpsElement.style.color = '#f00'; // Vermelho - Crítico
-                    }
+            const now = performance.now();
+            if (now >= lastTime + 1000) {
+                const fps = Math.round((frames * 1000) / (now - lastTime));
+                const el = document.getElementById('fps');
+                if (el) {
+                    el.textContent = `FPS: ${fps}`;
+                    el.style.color = fps >= 55 ? '#0f0' : fps >= 30 ? '#ff0' : '#f00';
                 }
-                
                 frames = 0;
-                lastTime = currentTime;
+                lastTime = now;
             }
-            
             requestAnimationFrame(updateFPS);
         }
-        
         updateFPS();
-
-        // ====================================
-        // Detecta erros de carregamento (CORRIGIDO)
-        // ====================================
-        window.addEventListener('error', (e) => {
-            // Ignora erros de recursos 404 (imagens, favicon, etc)
-            if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'LINK')) {
-                return;
-            }
-
-            const errorMessage = e.message || e.error?.message || 'Erro desconhecido';
-            console.error('Erro detectado:', errorMessage);
-            
-            // Mostra mensagem apenas para erros críticos
-            if (errorMessage && typeof errorMessage === 'string') {
-                if (errorMessage.includes('shader') || 
-                    errorMessage.includes('WebGL') || 
-                    errorMessage.includes('gl')) {
-                    
-                    const loading = document.getElementById('loading');
-                    if (loading) {
-                        loading.innerHTML = `
-                            <div style="color: #f44; font-size: 20px;">
-                                ⚠️ Erro ao carregar recursos WebGL<br>
-                                <span style="font-size: 14px; color: #aaa; margin-top: 10px; display: block;">
-                                    Verifique o console para mais detalhes
-                                </span>
-                            </div>
-                        `;
-                        loading.classList.remove('hidden');
-                    }
-                }
-            }
-        }, true);
-
-        // ====================================
-        // Previne scroll em mobile
-        // ====================================
-        document.body.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-        }, { passive: false });
-
-        // ====================================
-        // Log de inicialização
-        // ====================================
-        console.log('%c🎨 Museu Virtual 3D ', 'background: #4da6ff; color: white; font-size: 16px; padding: 8px; border-radius: 4px;');
-        console.log('Desenvolvido com WebGL');
-        console.log('📦 Carregando recursos...');
-
-        // ====================================
-        // Detecta suporte a WebGL
-        // ====================================
-        const canvas = document.getElementById('glCanvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
         
-        if (!gl) {
+        // Hide loading after delay
+        setTimeout(() => {
             const loading = document.getElementById('loading');
-            if (loading) {
-                loading.innerHTML = `
-                    <div style="color: #f44; font-size: 20px;">
-                        ⚠️ WebGL não suportado<br>
-                        <span style="font-size: 14px; color: #aaa; margin-top: 10px; display: block;">
-                            Seu navegador não suporta WebGL.<br>
-                            Tente usar Chrome, Firefox ou Edge.
-                        </span>
-                    </div>
-                `;
-                loading.classList.remove('hidden');
-            }
-            console.error('WebGL não está disponível neste navegador.');
-        } else {
-            console.log('✓ WebGL detectado e funcionando');
-        }
+            if (loading) loading.classList.add('hidden');
+        }, 2000);
+        
+        // Hide info
+        setTimeout(() => {
+            const info = document.getElementById('info');
+            if (info) info.classList.add('hidden');
+        }, 8000);
     </script>
-
 </body>
 </html>
