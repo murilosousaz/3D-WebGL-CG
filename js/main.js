@@ -89,6 +89,15 @@ async function init() {
         // Carregar textura do cenário simplificado
         textures.floor = loadTexture(gl, 'assets/piso.jpg');
 
+        console.log("Carregando escultura central...");
+        const statueData = await loadOBJ('assets/statue.obj');
+        if (statueData) {
+            objModels.statue = initOBJBuffers(gl, statueData);
+            console.log("✓ Escultura OBJ carregada com sucesso!");
+        } else {
+            console.error("✗ Erro ao carregar escultura OBJ");
+        }
+
         setupInput();
         initCollisionObjects();
 
