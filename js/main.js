@@ -25,7 +25,7 @@ let objModels = {}; // Armazena os modelos OBJ carregados
 let objTextures = {}; // Armazena as texturas dos modelos OBJ
 
 // Configuração da Câmera
-let cameraPos = [0, 1.8, 15];
+let cameraPos = [0, 1.8, 26];
 let cameraFront = [0, 0, -1];
 let cameraUp = [0, 1, 0];
 let yaw = -90;
@@ -54,10 +54,41 @@ const acceleration = 0.8;
 
 // Luz
 let lightPositions = [
-    [0, 5, 0],
-    [15, 5, -10],
-    [-15, 5, -10],
-    [0, 5, -30]
+    [0, 9, 0],
+    [16, 8, -18],
+    [-16, 8, -18],
+    [0, 8, -38]
+];
+
+const hall = {
+    width: 46,
+    depth: 72,
+    height: 11
+};
+
+const exhibitionItems = [
+    { model: 'statue', pos: [-14, 0.45, -12], scale: [0.24, 0.24, 0.24], rotSpeed: 0.25, color: [0.9, 0.9, 0.92] },
+    { model: 'moon', pos: [-7, 0.55, -12], scale: [0.55, 0.55, 0.55], rotSpeed: -0.2, color: [0.82, 0.86, 0.96] },
+    { model: 'statue', pos: [0, 0.45, -12], scale: [0.24, 0.24, 0.24], rotSpeed: 0.15, color: [0.95, 0.87, 0.82] },
+    { model: 'moon', pos: [7, 0.55, -12], scale: [0.58, 0.58, 0.58], rotSpeed: -0.22, color: [0.8, 0.88, 0.9] },
+    { model: 'statue', pos: [14, 0.45, -12], scale: [0.24, 0.24, 0.24], rotSpeed: 0.21, color: [0.88, 0.9, 0.85] },
+
+    { model: 'moon', pos: [-14, 0.55, -26], scale: [0.55, 0.55, 0.55], rotSpeed: 0.24, color: [0.86, 0.84, 0.95] },
+    { model: 'statue', pos: [-7, 0.45, -26], scale: [0.24, 0.24, 0.24], rotSpeed: -0.22, color: [0.96, 0.9, 0.8] },
+    { model: 'moon', pos: [0, 0.55, -26], scale: [0.58, 0.58, 0.58], rotSpeed: 0.19, color: [0.85, 0.9, 0.92] },
+    { model: 'statue', pos: [7, 0.45, -26], scale: [0.24, 0.24, 0.24], rotSpeed: 0.26, color: [0.89, 0.88, 0.96] },
+    { model: 'moon', pos: [14, 0.55, -26], scale: [0.56, 0.56, 0.56], rotSpeed: -0.15, color: [0.9, 0.82, 0.88] },
+
+    { model: 'statue', pos: [-14, 0.45, -40], scale: [0.24, 0.24, 0.24], rotSpeed: -0.18, color: [0.95, 0.86, 0.78] },
+    { model: 'moon', pos: [-7, 0.55, -40], scale: [0.55, 0.55, 0.55], rotSpeed: 0.28, color: [0.8, 0.9, 0.95] },
+    { model: 'statue', pos: [0, 0.45, -40], scale: [0.24, 0.24, 0.24], rotSpeed: -0.23, color: [0.94, 0.91, 0.85] },
+    { model: 'moon', pos: [7, 0.55, -40], scale: [0.58, 0.58, 0.58], rotSpeed: 0.17, color: [0.92, 0.85, 0.86] },
+    { model: 'statue', pos: [14, 0.45, -40], scale: [0.24, 0.24, 0.24], rotSpeed: -0.2, color: [0.9, 0.87, 0.95] },
+
+    { model: 'moon', pos: [-10.5, 0.55, -54], scale: [0.56, 0.56, 0.56], rotSpeed: -0.2, color: [0.85, 0.89, 0.95] },
+    { model: 'statue', pos: [-3.5, 0.45, -54], scale: [0.24, 0.24, 0.24], rotSpeed: 0.24, color: [0.94, 0.86, 0.84] },
+    { model: 'moon', pos: [3.5, 0.55, -54], scale: [0.56, 0.56, 0.56], rotSpeed: -0.24, color: [0.9, 0.9, 0.82] },
+    { model: 'statue', pos: [10.5, 0.45, -54], scale: [0.24, 0.24, 0.24], rotSpeed: 0.22, color: [0.84, 0.9, 0.88] }
 ];
 
 // Lista de objetos colidíveis
@@ -86,16 +117,26 @@ async function init() {
         const cubeData = createCubeData();
         buffers = initBuffers(gl, cubeData);
 
-        // Carregar textura do cenário simplificado
+        // Texturas do grande hall
         textures.floor = loadTexture(gl, 'assets/piso.jpg');
+        textures.wall = loadTexture(gl, 'assets/parede.jpg');
+        textures.wood = loadTexture(gl, 'assets/madeira.jpg');
 
-        console.log("Carregando escultura central...");
+        console.log("Carregando acervo OBJ da galeria...");
         const statueData = await loadOBJ('assets/statue.obj');
         if (statueData) {
             objModels.statue = initOBJBuffers(gl, statueData);
-            console.log("✓ Escultura OBJ carregada com sucesso!");
+            console.log("✓ Esculturas carregadas com sucesso!");
         } else {
-            console.error("✗ Erro ao carregar escultura OBJ");
+            console.error("✗ Erro ao carregar statue.obj");
+        }
+
+        const moonData = await loadOBJ('assets/moon.obj');
+        if (moonData) {
+            objModels.moon = initOBJBuffers(gl, moonData);
+            console.log("✓ Artefato moon.obj carregado com sucesso!");
+        } else {
+            console.error("✗ Erro ao carregar moon.obj");
         }
 
         setupInput();
@@ -115,9 +156,19 @@ async function init() {
  */
 function initCollisionObjects() {
     collisionObjects = [
-        // Cenário simplificado: apenas uma box central
-        { type: 'box', pos: [0, 1.5, -8], size: [6, 3, 6] }
+        { type: 'box', pos: [0, hall.height / 2, -hall.depth / 2], size: [hall.width, hall.height, 0.6] },
+        { type: 'box', pos: [0, hall.height / 2, 0.2], size: [hall.width, hall.height, 0.6] },
+        { type: 'box', pos: [-hall.width / 2, hall.height / 2, -hall.depth / 2], size: [0.6, hall.height, hall.depth] },
+        { type: 'box', pos: [hall.width / 2, hall.height / 2, -hall.depth / 2], size: [0.6, hall.height, hall.depth] }
     ];
+
+    exhibitionItems.forEach((item) => {
+        collisionObjects.push({
+            type: 'box',
+            pos: [item.pos[0], 0.4, item.pos[2]],
+            size: [2.4, 0.8, 2.4]
+        });
+    });
 }
 
 /**
@@ -302,12 +353,34 @@ function checkBoxCollision(playerPos, box) {
  * Desenha todo o ambiente do museu
  */
 function drawMuseum(time) {
-    // Piso simples do cenário
-    drawObject([0, 0, 0], [30, 0.1, 30], [0, 0, 0], textures.floor, true);
+    const wallZ = -hall.depth / 2;
 
-    // Única box principal do cenário
-    const mainBoxColor = [0.72, 0.76, 0.82];
-    drawObject([0, 1.5, -8], [6, 3, 6], [0, time * 0.2, 0], null, false, mainBoxColor);
+    // Grande hall principal
+    drawObject([0, 0, wallZ], [hall.width, 0.1, hall.depth], [0, 0, 0], textures.floor, true);
+    drawObject([0, hall.height, wallZ], [hall.width, 0.1, hall.depth], [0, 0, 0], textures.wall, true, [0.95, 0.95, 0.95]);
+    drawObject([0, hall.height / 2, 0], [hall.width, hall.height, 0.1], [0, 0, 0], textures.wall, true);
+    drawObject([0, hall.height / 2, -hall.depth], [hall.width, hall.height, 0.1], [0, 0, 0], textures.wall, true);
+    drawObject([-hall.width / 2, hall.height / 2, wallZ], [0.1, hall.height, hall.depth], [0, 0, 0], textures.wall, true);
+    drawObject([hall.width / 2, hall.height / 2, wallZ], [0.1, hall.height, hall.depth], [0, 0, 0], textures.wall, true);
+
+    // Passarela principal
+    drawObject([0, 0.02, wallZ], [8, 0.04, hall.depth - 6], [0, 0, 0], textures.wood, true, [0.85, 0.82, 0.74]);
+
+    // Exposição com inúmeros itens OBJ
+    exhibitionItems.forEach((item, index) => {
+        drawPedestal([item.pos[0], 0.38, item.pos[2]], [2.1, 0.76, 2.1], [0.88, 0.88, 0.9]);
+        drawPedestal([item.pos[0], 0.78, item.pos[2]], [1.6, 0.08, 1.6], [0.78, 0.78, 0.8]);
+
+        const wobble = Math.sin(time + index * 0.7) * 0.025;
+        drawOBJModel(
+            objModels[item.model],
+            [item.pos[0], item.pos[1] + wobble, item.pos[2]],
+            item.scale,
+            [0, time * item.rotSpeed, 0],
+            null,
+            item.color
+        );
+    });
 }
 
 function drawFrame(pos, scale, color = [0.2, 0.15, 0.1]) {
