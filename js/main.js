@@ -92,7 +92,7 @@ async function init() {
         textures.wall = loadTexture(gl, 'assets/parede.jpg');
         textures.wood = loadTexture(gl, 'assets/madeira.jpg');
 
-        // === CARREGAR MODELO OBJ DA LUA ===
+        // === CARREGAR MODELOS OBJ ===
         console.log("Carregando modelo da lua...");
         const moonData = await loadOBJ('assets/moon.obj');
         if (moonData) {
@@ -105,6 +105,15 @@ async function init() {
             console.log("✓ Modelo da lua carregado com sucesso!");
         } else {
             console.error("✗ Erro ao carregar modelo da lua");
+        }
+
+        console.log("Carregando escultura central...");
+        const statueData = await loadOBJ('assets/statue.obj');
+        if (statueData) {
+            objModels.statue = initOBJBuffers(gl, statueData);
+            console.log("✓ Escultura OBJ carregada com sucesso!");
+        } else {
+            console.error("✗ Erro ao carregar escultura OBJ");
         }
 
         setupInput();
@@ -131,10 +140,7 @@ function initCollisionObjects() {
         { type: 'box', pos: [-20, 4, 0], size: [0.3, 8, 60] },
         { type: 'box', pos: [20, 4, 0], size: [0.3, 8, 60] },
         
-        // Divisórias internas
-        { type: 'box', pos: [-10, 4, -10], size: [0.2, 8, 15] },
-        { type: 'box', pos: [10, 4, -10], size: [0.2, 8, 15] },
-        { type: 'box', pos: [0, 4, 10], size: [30, 8, 0.2] },
+        // Divisórias internas removidas para abrir a circulação central
         
         // Pedestais
         { type: 'box', pos: [0, 0.5, -15], size: [1.5, 1, 1.5] },
@@ -145,7 +151,10 @@ function initCollisionObjects() {
         // Pedestais das luas
         { type: 'box', pos: [0, 0.5, -20], size: [2, 1, 2] },
         { type: 'box', pos: [-12, 0.5, -25], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [12, 0.5, -25], size: [1.5, 1, 1.5] }
+        { type: 'box', pos: [12, 0.5, -25], size: [1.5, 1, 1.5] },
+
+        // Pedestal da nova escultura OBJ
+        { type: 'box', pos: [0, 0.7, 14], size: [2.8, 1.4, 2.8] }
     ];
 }
 
@@ -334,6 +343,10 @@ function drawMuseum(time) {
     // === ESTRUTURA BÁSICA ===
     drawObject([0, 0, 0], [40, 0.1, 60], [0, 0, 0], textures.floor, true);
     drawObject([0, 8, 0], [40, 0.1, 60], [0, 0, 0], null, false, [0.9, 0.9, 0.9]);
+
+    // Faixa central para guiar o visitante
+    drawObject([0, 0.06, -8], [6, 0.02, 40], [0, 0, 0], null, false, [0.45, 0.08, 0.1]);
+    drawObject([0, 0.07, -8], [4.5, 0.02, 39], [0, 0, 0], null, false, [0.62, 0.12, 0.15]);
     
     // Paredes externas
     drawObject([0, 4, -30], [40, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
@@ -342,11 +355,14 @@ function drawMuseum(time) {
     drawObject([0, 7, 30], [10, 2, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
     drawObject([-20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
     drawObject([20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+
+    // Colunas decorativas próximas à entrada
+    drawObject([-15, 2.5, 27], [0.9, 5, 0.9], [0, 0, 0], null, false, [0.72, 0.72, 0.74]);
+    drawObject([15, 2.5, 27], [0.9, 5, 0.9], [0, 0, 0], null, false, [0.72, 0.72, 0.74]);
+    drawObject([-15, 5.3, 27], [1.2, 0.25, 1.2], [0, 0, 0], null, false, [0.62, 0.62, 0.65]);
+    drawObject([15, 5.3, 27], [1.2, 0.25, 1.2], [0, 0, 0], null, false, [0.62, 0.62, 0.65]);
     
-    // Divisórias internas
-    drawObject([-10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
-    drawObject([10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
-    drawObject([0, 4, 10], [30, 8, 0.2], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
+    // Divisórias internas removidas para deixar o salão principal mais amplo
     
     // === GALERIA PAREDE DE FUNDO (muito mais quadros) ===
     
@@ -479,6 +495,19 @@ function drawMuseum(time) {
     
     drawObject([0, 1.5, 5], [2, 0.5, 2], [time * 0.3, 0, 0], null, false, [0.5, 0.5, 0.5]);
     drawPedestal([0, 0.5, 5], [2.5, 1, 2.5]);
+
+    // Escultura OBJ principal no hall de entrada
+    if (objModels.statue) {
+        drawOBJModel(
+            objModels.statue,
+            [0, 2.2, 14],
+            [1.8, 1.8, 1.8],
+            [0, time * 0.15, 0],
+            null,
+            [0.82, 0.78, 0.68]
+        );
+        drawPedestal([0, 0.7, 14], [2.8, 1.4, 2.8], [0.58, 0.58, 0.6]);
+    }
     
     // === MODELOS DA LUA (OBJ) ===
     if (objModels.moon) {
@@ -539,6 +568,11 @@ function drawMuseum(time) {
     drawSpotLight([15, 6, -29], [0.8, 0.8, 0]);
     drawSpotLight([-19, 5, 0], [0.8, 0.8, 0]);
     drawSpotLight([19, 5, 0], [0.8, 0, 0.8]);
+
+    // Trilho de luminárias no teto
+    for (let z = -24; z <= 24; z += 8) {
+        drawObject([0, 7.85, z], [12, 0.05, 0.4], [0, 0, 0], null, false, [0.95, 0.95, 0.9]);
+    }
 }
 
 function drawFrame(pos, scale, color = [0.2, 0.15, 0.1]) {
