@@ -1,3 +1,5 @@
+import { HUD2 } from "./hud.js";
+
 import { loadOBJ, parseOBJ } from './obj_loader.js';
 import ShaderLoader from './shader_loader.js';
 import {createCubeData} from './geometry.js';
@@ -93,7 +95,7 @@ const exhibitionItems = [
 
 // Lista de objetos colidíveis
 let collisionObjects = [];
-
+let hud;
 /**
  * Função de Inicialização
  */
@@ -108,6 +110,7 @@ async function init() {
         alert("WebGL não suportado!");
         return;
     }
+    hud = new HUD2();
 
     console.log("WebGL inicializado. Carregando recursos...");
 
@@ -238,7 +241,7 @@ function render(now) {
     setUniform3f(gl, program, "uLightPos", lightPositions[0]);
     setUniform3f(gl, program, "uViewPos", cameraPos);
     setUniform3f(gl, program, "uLightColor", [1.0, 1.0, 0.9]);
-
+    hud.update(cameraPos, cameraFront);
     drawMuseum(now);
 
     requestAnimationFrame(render);

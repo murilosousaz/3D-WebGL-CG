@@ -1,0 +1,16 @@
+#hud {
+  position: fixed;
+  top: 64px;
+  right: 8px;
+  padding: 6px 8px;
+
+  font-family: monospace;
+  font-size: 13px;
+  color: #00ffcc;
+
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 4px;
+
+  pointer-events: none;
+  white-space: pre;
+}
