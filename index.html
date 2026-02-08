@@ -1,52 +1,79 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Museu de Arte Abstrata | CG 2026</title>
+    <title>Museu Virtual 3D | WebGL</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-        }
-        #glCanvas {
-            width: 100vw;
-            height: 100vh;
-            display: block;
-        }
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            font-family: sans-serif;
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            pointer-events: none;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { width: 100%; height: 100vh; overflow: hidden; background: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #glCanvas { width: 100vw; height: 100vh; display: block; cursor: crosshair; }
+        #ui { position: absolute; top: 20px; left: 20px; color: #fff; background: rgba(15, 15, 25, 0.85); backdrop-filter: blur(15px); padding: 20px 25px; border-radius: 16px; pointer-events: none; font-size: 14px; line-height: 1.8; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7); max-width: 350px; z-index: 100; border: 1px solid rgba(77, 166, 255, 0.3); }
+        #ui h2 { margin: 0 0 15px 0; font-size: 22px; font-weight: 600; color: #4da6ff; border-bottom: 2px solid #4da6ff; padding-bottom: 10px; }
+        #ui .controls { display: grid; grid-template-columns: auto 1fr; gap: 12px 15px; margin-top: 12px; }
+        #ui .key { background: linear-gradient(135deg, rgba(77, 166, 255, 0.2), rgba(77, 166, 255, 0.1)); padding: 8px 14px; border-radius: 8px; font-weight: 600; text-align: center; min-width: 80px; font-size: 13px; border: 1px solid rgba(77, 166, 255, 0.4); }
+        #ui .action { color: #e8e8e8; display: flex; align-items: center; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 24px; text-align: center; z-index: 200; background: rgba(15, 15, 25, 0.95); padding: 50px 80px; border-radius: 20px; box-shadow: 0 15px 60px rgba(0, 0, 0, 0.9); }
+        #loading.hidden { display: none; }
+        .spinner { border: 5px solid rgba(77, 166, 255, 0.1); border-top: 5px solid #4da6ff; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 25px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading p { margin: 0; font-size: 18px; color: #bbb; }
+        #fps { position: absolute; top: 20px; right: 20px; color: #0f0; background: rgba(0, 0, 0, 0.85); padding: 15px 22px; border-radius: 12px; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; pointer-events: none; z-index: 100; }
+        #info { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(15, 15, 25, 0.8); padding: 15px 30px; border-radius: 12px; font-size: 14px; pointer-events: none; z-index: 100; text-align: center; transition: opacity 0.5s; }
+        #info.hidden { opacity: 0; }
     </style>
 </head>
 <body>
-
-    <div id="ui">
-        <b>Comandos:</b><br>
-        W, A, S, D - Caminhar<br>
-        Setas - Olhar
-    </div>
-
     <canvas id="glCanvas"></canvas>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
-
-    <script src="js/geometry.js"></script>
-    <script src="js/renderer.js"></script>
-    <script src="js/shaders.js"></script>
-
-    <script src="js/main.js"></script>
-
+    <div id="ui">
+        <h2>🎮 Controles</h2>
+        <div class="controls">
+            <span class="key">W A S D</span><span class="action">Mover</span>
+            <span class="key">Mouse</span><span class="action">Olhar</span>
+            <span class="key">Shift</span><span class="action">Correr</span>
+            <span class="key">Espaço</span><span class="action">Pular</span>
+            <span class="key">ESC</span><span class="action">Liberar mouse</span>
+        </div>
+    </div>
+    <div id="fps">FPS: --</div>
+    <div id="info">💡 Clique na tela para começar</div>
+    <div id="loading"><div class="spinner"></div><p>Carregando...</p></div>
+    
+    <script src="js/utils/gl-matrix.js"></script>
+    <script type="module" src="js/main.js"></script>
+    
+    <script>
+        // FPS Counter
+        let lastTime = performance.now(), frames = 0;
+        function updateFPS() {
+            frames++;
+            const now = performance.now();
+            if (now >= lastTime + 1000) {
+                const fps = Math.round((frames * 1000) / (now - lastTime));
+                const el = document.getElementById('fps');
+                if (el) {
+                    el.textContent = `FPS: ${fps}`;
+                    el.style.color = fps >= 55 ? '#0f0' : fps >= 30 ? '#ff0' : '#f00';
+                }
+                frames = 0;
+                lastTime = now;
+            }
+            requestAnimationFrame(updateFPS);
+        }
+        updateFPS();
+        
+        // Hide loading after delay
+        setTimeout(() => {
+            const loading = document.getElementById('loading');
+            if (loading) loading.classList.add('hidden');
+        }, 2000);
+        
+        // Hide info
+        setTimeout(() => {
+            const info = document.getElementById('info');
+            if (info) info.classList.add('hidden');
+        }, 8000);
+    </script>
 </body>
 </html>

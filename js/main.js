@@ -1,7 +1,17 @@
+import { loadOBJ, parseOBJ } from './obj_loader.js';
+import ShaderLoader from './shader_loader.js';
+import {createCubeData} from './geometry.js';
+import { loadTexture, initBuffers, setUniformMatrix4fv, isPowerOf2, setUniformMatrix3fv, setUniform3f, setUniform1f, setUniform1i, bindBuffers } from './utils.js';
+
+
+
+
+const toRadian = window.glMatrix.glMatrix.toRadian;
 const mat4 = window.mat4 || (window.glMatrix ? window.glMatrix.mat4 : null);
 const mat3 = window.mat3 || (window.glMatrix ? window.glMatrix.mat3 : null);
 const vec3 = window.vec3 || (window.glMatrix ? window.glMatrix.vec3 : null);
 const glMatrix = window.glMatrix;
+const angle = toRadian(45);
 
 if (!mat4 || !vec3) {
     console.error("Erro: gl-matrix não foi carregada corretamente. Verifique o caminho no index.html.");
@@ -11,9 +21,11 @@ let gl;
 let program;
 let buffers;
 let textures = {};
+let objModels = {}; // Armazena os modelos OBJ carregados
+let objTextures = {}; // Armazena as texturas dos modelos OBJ
 
 // Configuração da Câmera
-let cameraPos = [0, 1.8, 15];
+let cameraPos = [0, 1.8, 26];
 let cameraFront = [0, 0, -1];
 let cameraUp = [0, 1, 0];
 let yaw = -90;
@@ -42,10 +54,41 @@ const acceleration = 0.8;
 
 // Luz
 let lightPositions = [
-    [0, 5, 0],
-    [15, 5, -10],
-    [-15, 5, -10],
-    [0, 5, -30]
+    [0, 9, 0],
+    [16, 8, -18],
+    [-16, 8, -18],
+    [0, 8, -38]
+];
+
+const hall = {
+    width: 46,
+    depth: 72,
+    height: 11
+};
+
+const exhibitionItems = [
+    { model: 'statue', pos: [-14, 0.45, -12], scale: [0.24, 0.24, 0.24], rotSpeed: 0.25, color: [0.9, 0.9, 0.92] },
+    { model: 'moon', pos: [-7, 0.55, -12], scale: [0.55, 0.55, 0.55], rotSpeed: -0.2, color: [0.82, 0.86, 0.96] },
+    { model: 'statue', pos: [0, 0.45, -12], scale: [0.24, 0.24, 0.24], rotSpeed: 0.15, color: [0.95, 0.87, 0.82] },
+    { model: 'moon', pos: [7, 0.55, -12], scale: [0.58, 0.58, 0.58], rotSpeed: -0.22, color: [0.8, 0.88, 0.9] },
+    { model: 'statue', pos: [14, 0.45, -12], scale: [0.24, 0.24, 0.24], rotSpeed: 0.21, color: [0.88, 0.9, 0.85] },
+
+    { model: 'moon', pos: [-14, 0.55, -26], scale: [0.55, 0.55, 0.55], rotSpeed: 0.24, color: [0.86, 0.84, 0.95] },
+    { model: 'statue', pos: [-7, 0.45, -26], scale: [0.24, 0.24, 0.24], rotSpeed: -0.22, color: [0.96, 0.9, 0.8] },
+    { model: 'moon', pos: [0, 0.55, -26], scale: [0.58, 0.58, 0.58], rotSpeed: 0.19, color: [0.85, 0.9, 0.92] },
+    { model: 'statue', pos: [7, 0.45, -26], scale: [0.24, 0.24, 0.24], rotSpeed: 0.26, color: [0.89, 0.88, 0.96] },
+    { model: 'moon', pos: [14, 0.55, -26], scale: [0.56, 0.56, 0.56], rotSpeed: -0.15, color: [0.9, 0.82, 0.88] },
+
+    { model: 'statue', pos: [-14, 0.45, -40], scale: [0.24, 0.24, 0.24], rotSpeed: -0.18, color: [0.95, 0.86, 0.78] },
+    { model: 'moon', pos: [-7, 0.55, -40], scale: [0.55, 0.55, 0.55], rotSpeed: 0.28, color: [0.8, 0.9, 0.95] },
+    { model: 'statue', pos: [0, 0.45, -40], scale: [0.24, 0.24, 0.24], rotSpeed: -0.23, color: [0.94, 0.91, 0.85] },
+    { model: 'moon', pos: [7, 0.55, -40], scale: [0.58, 0.58, 0.58], rotSpeed: 0.17, color: [0.92, 0.85, 0.86] },
+    { model: 'statue', pos: [14, 0.45, -40], scale: [0.24, 0.24, 0.24], rotSpeed: -0.2, color: [0.9, 0.87, 0.95] },
+
+    { model: 'moon', pos: [-10.5, 0.55, -54], scale: [0.56, 0.56, 0.56], rotSpeed: -0.2, color: [0.85, 0.89, 0.95] },
+    { model: 'statue', pos: [-3.5, 0.45, -54], scale: [0.24, 0.24, 0.24], rotSpeed: 0.24, color: [0.94, 0.86, 0.84] },
+    { model: 'moon', pos: [3.5, 0.55, -54], scale: [0.56, 0.56, 0.56], rotSpeed: -0.24, color: [0.9, 0.9, 0.82] },
+    { model: 'statue', pos: [10.5, 0.45, -54], scale: [0.24, 0.24, 0.24], rotSpeed: 0.22, color: [0.84, 0.9, 0.88] }
 ];
 
 // Lista de objetos colidíveis
@@ -74,11 +117,27 @@ async function init() {
         const cubeData = createCubeData();
         buffers = initBuffers(gl, cubeData);
 
-        // Carregar texturas
+        // Texturas do grande hall
         textures.floor = loadTexture(gl, 'assets/piso.jpg');
-        textures.art = loadTexture(gl, 'assets/quadro.jpg');
         textures.wall = loadTexture(gl, 'assets/parede.jpg');
-        textures.wood = loadTexture(gl, 'assets/madeira.jpg'); // Textura para bancos
+        textures.wood = loadTexture(gl, 'assets/madeira.jpg');
+
+        console.log("Carregando acervo OBJ da galeria...");
+        const statueData = await loadOBJ('assets/statue.obj');
+        if (statueData) {
+            objModels.statue = initOBJBuffers(gl, statueData);
+            console.log("✓ Esculturas carregadas com sucesso!");
+        } else {
+            console.error("✗ Erro ao carregar statue.obj");
+        }
+
+        const moonData = await loadOBJ('assets/moon.obj');
+        if (moonData) {
+            objModels.moon = initOBJBuffers(gl, moonData);
+            console.log("✓ Artefato moon.obj carregado com sucesso!");
+        } else {
+            console.error("✗ Erro ao carregar moon.obj");
+        }
 
         setupInput();
         initCollisionObjects();
@@ -97,24 +156,52 @@ async function init() {
  */
 function initCollisionObjects() {
     collisionObjects = [
-        // Paredes externas
-        { type: 'box', pos: [0, 4, -30], size: [40, 8, 0.3] },
-        { type: 'box', pos: [-15, 4, 30], size: [10, 8, 0.3] },
-        { type: 'box', pos: [15, 4, 30], size: [10, 8, 0.3] },
-        { type: 'box', pos: [-20, 4, 0], size: [0.3, 8, 60] },
-        { type: 'box', pos: [20, 4, 0], size: [0.3, 8, 60] },
-        
-        // Divisórias internas
-        { type: 'box', pos: [-10, 4, -10], size: [0.2, 8, 15] },
-        { type: 'box', pos: [10, 4, -10], size: [0.2, 8, 15] },
-        { type: 'box', pos: [0, 4, 10], size: [30, 8, 0.2] },
-        
-        // Pedestais
-        { type: 'box', pos: [0, 0.5, -15], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [7, 0.5, 0], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [-7, 0.5, 0], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [0, 0.5, 5], size: [2.5, 1, 2.5] }
+        { type: 'box', pos: [0, hall.height / 2, -hall.depth / 2], size: [hall.width, hall.height, 0.6] },
+        { type: 'box', pos: [0, hall.height / 2, 0.2], size: [hall.width, hall.height, 0.6] },
+        { type: 'box', pos: [-hall.width / 2, hall.height / 2, -hall.depth / 2], size: [0.6, hall.height, hall.depth] },
+        { type: 'box', pos: [hall.width / 2, hall.height / 2, -hall.depth / 2], size: [0.6, hall.height, hall.depth] }
     ];
+
+    exhibitionItems.forEach((item) => {
+        collisionObjects.push({
+            type: 'box',
+            pos: [item.pos[0], 0.4, item.pos[2]],
+            size: [2.4, 0.8, 2.4]
+        });
+    });
+}
+
+/**
+ * Inicializa buffers para um modelo OBJ
+ */
+function initOBJBuffers(gl, objData) {
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, objData.positions, gl.STATIC_DRAW);
+
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, objData.normals, gl.STATIC_DRAW);
+
+    const uvBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, objData.uvs, gl.STATIC_DRAW);
+
+    let indexBuffer = null;
+    if (objData.indices) {
+        indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, objData.indices, gl.STATIC_DRAW);
+    }
+
+    return {
+        position: positionBuffer,
+        normal: normalBuffer,
+        uv: uvBuffer,
+        indices: indexBuffer,
+        count: objData.count,
+        indexCount: objData.indices ? objData.indices.length : 0
+    };
 }
 
 let lastTime = 0;
@@ -266,176 +353,34 @@ function checkBoxCollision(playerPos, box) {
  * Desenha todo o ambiente do museu
  */
 function drawMuseum(time) {
-    // === ESTRUTURA BÁSICA ===
-    drawObject([0, 0, 0], [40, 0.1, 60], [0, 0, 0], textures.floor, true);
-    drawObject([0, 8, 0], [40, 0.1, 60], [0, 0, 0], null, false, [0.9, 0.9, 0.9]);
-    
-    // Paredes externas
-    drawObject([0, 4, -30], [40, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([-15, 4, 30], [10, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([15, 4, 30], [10, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([0, 7, 30], [10, 2, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([-20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    
-    // Divisórias internas
-    drawObject([-10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
-    drawObject([10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
-    drawObject([0, 4, 10], [30, 8, 0.2], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
-    
-    // === GALERIA PAREDE DE FUNDO (muito mais quadros) ===
-    
-    // Linha superior de quadros pequenos
-    for (let i = -3; i <= 3; i++) {
-        if (i !== 0) { // Pula o centro
-            drawObject([i * 5, 6.5, -29.5], [2, 1.5, 0.1], [0, 0, 0], textures.art, true);
-            drawFrame([i * 5, 6.5, -29.4], [2.2, 1.7, 0.15]);
-        }
-    }
-    
-    // Linha do meio - Quadro grande central
-    drawObject([0, 4, -29.5], [6, 5, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([0, 4, -29.4], [6.3, 5.3, 0.15]);
-    
-    // Quadros médios ao lado do grande
-    drawObject([-10, 4, -29.5], [4, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-10, 4, -29.4], [4.3, 3.3, 0.15]);
-    
-    drawObject([10, 4, -29.5], [4, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([10, 4, -29.4], [4.3, 3.3, 0.15]);
-    
-    // Quadros nas extremidades
-    drawObject([-16, 4, -29.5], [3, 2.5, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-16, 4, -29.4], [3.2, 2.7, 0.15]);
-    
-    drawObject([16, 4, -29.5], [3, 2.5, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([16, 4, -29.4], [3.2, 2.7, 0.15]);
-    
-    // Linha inferior de quadros
-    drawObject([-12, 2, -29.5], [2.5, 2, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-12, 2, -29.4], [2.7, 2.2, 0.15]);
-    
-    drawObject([12, 2, -29.5], [2.5, 2, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([12, 2, -29.4], [2.7, 2.2, 0.15]);
-    
-    // === GALERIA LATERAL ESQUERDA (mais quadros) ===
-    
-    // Sequência vertical completa
-    for (let z = -20; z <= 20; z += 5) {
-        drawObject([-19.5, 3.5, z], [0.1, 3, 3.5], [0, 0, 0], textures.art, true);
-        drawFrame([-19.4, 3.5, z], [0.15, 3.3, 3.8]);
-    }
-    
-    // Quadros pequenos intercalados
-    for (let z = -17.5; z <= 17.5; z += 5) {
-        drawObject([-19.5, 6, z], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-        drawFrame([-19.4, 6, z], [0.15, 1.7, 2.2]);
-    }
-    
-    // === GALERIA LATERAL DIREITA (mais quadros) ===
-    
-    // Sequência vertical completa
-    for (let z = -20; z <= 20; z += 5) {
-        drawObject([19.5, 3.5, z], [0.1, 3, 3.5], [0, 0, 0], textures.art, true);
-        drawFrame([19.4, 3.5, z], [0.15, 3.3, 3.8]);
-    }
-    
-    // Quadros pequenos intercalados
-    for (let z = -17.5; z <= 17.5; z += 5) {
-        drawObject([19.5, 6, z], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-        drawFrame([19.4, 6, z], [0.15, 1.7, 2.2]);
-    }
-    
-    // === DIVISÓRIAS CENTRAIS COM QUADROS (ambos os lados) ===
-    
-    // Divisória esquerda - lado frontal
-    drawObject([-9.9, 3.5, -5], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([-9.8, 3.5, -5], [0.15, 3.3, 4.3]);
-    
-    drawObject([-9.9, 6, -5], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([-9.8, 6, -5], [0.15, 1.7, 2.2]);
-    
-    // Divisória esquerda - lado traseiro
-    drawObject([-10.1, 3.5, -15], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([-10.2, 3.5, -15], [0.15, 3.3, 4.3]);
-    
-    drawObject([-10.1, 6, -15], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([-10.2, 6, -15], [0.15, 1.7, 2.2]);
-    
-    drawObject([-10.1, 3.5, -10], [0.1, 3, 2.5], [0, 0, 0], textures.art, true);
-    drawFrame([-10.2, 3.5, -10], [0.15, 3.3, 2.7]);
-    
-    // Divisória direita - lado frontal
-    drawObject([9.9, 3.5, -5], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([9.8, 3.5, -5], [0.15, 3.3, 4.3]);
-    
-    drawObject([9.9, 6, -5], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([9.8, 6, -5], [0.15, 1.7, 2.2]);
-    
-    // Divisória direita - lado traseiro
-    drawObject([10.1, 3.5, -15], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([10.2, 3.5, -15], [0.15, 3.3, 4.3]);
-    
-    drawObject([10.1, 6, -15], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([10.2, 6, -15], [0.15, 1.7, 2.2]);
-    
-    drawObject([10.1, 3.5, -10], [0.1, 3, 2.5], [0, 0, 0], textures.art, true);
-    drawFrame([10.2, 3.5, -10], [0.15, 3.3, 2.7]);
-    
-    // === PAREDE FRONTAL - QUADROS NA ENTRADA ===
-    
-    // Lado esquerdo da entrada
-    drawObject([-17, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-17, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    drawObject([-12, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-12, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    // Lado direito da entrada
-    drawObject([17, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([17, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    drawObject([12, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([12, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    // === ESCULTURAS ANIMADAS ===
-    
-    const rot1 = time * 0.5;
-    drawObject([0, 2, -15], [1, 3, 1], [0, rot1, 0], null, false, [0.8, 0.3, 0.2]);
-    drawPedestal([0, 0.5, -15], [1.5, 1, 1.5]);
-    
-    const scale2 = 1 + Math.sin(time * 2) * 0.2;
-    drawObject([7, 1.5, 0], [scale2, scale2 * 2, scale2], [0, 0, 0], null, false, [0.2, 0.6, 0.8]);
-    drawPedestal([7, 0.5, 0], [1.5, 1, 1.5]);
-    
-    const rot3 = Math.sin(time) * 0.5;
-    drawObject([-7, 2, 0], [0.8, 3.5, 0.8], [rot3, 0, rot3], null, false, [0.9, 0.7, 0.1]);
-    drawPedestal([-7, 0.5, 0], [1.5, 1, 1.5]);
-    
-    drawObject([0, 1.5, 5], [2, 0.5, 2], [time * 0.3, 0, 0], null, false, [0.5, 0.5, 0.5]);
-    drawPedestal([0, 0.5, 5], [2.5, 1, 2.5]);
-    
-    // === BANCOS COM TEXTURA DE MADEIRA ===
-    
-    drawBench([0, 0.4, 0], 4);
-    drawBench([-8, 0.4, 20], 3);
-    drawBench([8, 0.4, 20], 3);
-    drawBench([0, 0.4, -25], 5);
-    drawBench([-15, 0.4, -20], 3);
-    drawBench([15, 0.4, -20], 3);
-    
-    // === ILUMINAÇÃO ===
-    
-    for (let i = 0; i < lightPositions.length; i++) {
-        drawObject(lightPositions[i], [0.3, 0.3, 0.3], [0, 0, 0], null, false, [1, 1, 0.9]);
-        drawObject([lightPositions[i][0], lightPositions[i][1] - 0.5, lightPositions[i][2]], 
-                   [0.5, 0.1, 0.5], [0, 0, 0], null, false, [1, 1, 0.7]);
-    }
-    
-    drawSpotLight([-15, 6, -29], [0, 0.8, 0.8]);
-    drawSpotLight([15, 6, -29], [0.8, 0.8, 0]);
-    drawSpotLight([-19, 5, 0], [0.8, 0.8, 0]);
-    drawSpotLight([19, 5, 0], [0.8, 0, 0.8]);
+    const wallZ = -hall.depth / 2;
+
+    // Grande hall principal
+    drawObject([0, 0, wallZ], [hall.width, 0.1, hall.depth], [0, 0, 0], textures.floor, true);
+    drawObject([0, hall.height, wallZ], [hall.width, 0.1, hall.depth], [0, 0, 0], textures.wall, true, [0.95, 0.95, 0.95]);
+    drawObject([0, hall.height / 2, 0], [hall.width, hall.height, 0.1], [0, 0, 0], textures.wall, true);
+    drawObject([0, hall.height / 2, -hall.depth], [hall.width, hall.height, 0.1], [0, 0, 0], textures.wall, true);
+    drawObject([-hall.width / 2, hall.height / 2, wallZ], [0.1, hall.height, hall.depth], [0, 0, 0], textures.wall, true);
+    drawObject([hall.width / 2, hall.height / 2, wallZ], [0.1, hall.height, hall.depth], [0, 0, 0], textures.wall, true);
+
+    // Passarela principal
+    drawObject([0, 0.02, wallZ], [8, 0.04, hall.depth - 6], [0, 0, 0], textures.wood, true, [0.85, 0.82, 0.74]);
+
+    // Exposição com inúmeros itens OBJ
+    exhibitionItems.forEach((item, index) => {
+        drawPedestal([item.pos[0], 0.38, item.pos[2]], [2.1, 0.76, 2.1], [0.88, 0.88, 0.9]);
+        drawPedestal([item.pos[0], 0.78, item.pos[2]], [1.6, 0.08, 1.6], [0.78, 0.78, 0.8]);
+
+        const wobble = Math.sin(time + index * 0.7) * 0.025;
+        drawOBJModel(
+            objModels[item.model],
+            [item.pos[0], item.pos[1] + wobble, item.pos[2]],
+            item.scale,
+            [0, time * item.rotSpeed, 0],
+            null,
+            item.color
+        );
+    });
 }
 
 function drawFrame(pos, scale, color = [0.2, 0.15, 0.1]) {
@@ -494,6 +439,60 @@ function drawObject(pos, scale, rot, texture, useTex, color = [1,1,1]) {
 
     bindBuffers(gl, program, buffers);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+
+/**
+ * Desenha um modelo OBJ
+ */
+function drawOBJModel(model, pos, scale, rot, texture, color = [1, 1, 1]) {
+    if (!model) return;
+
+    const modelMatrix = mat4.create();
+    mat4.translate(modelMatrix, modelMatrix, pos);
+    mat4.rotateX(modelMatrix, modelMatrix, rot[0]);
+    mat4.rotateY(modelMatrix, modelMatrix, rot[1]);
+    mat4.rotateZ(modelMatrix, modelMatrix, rot[2]);
+    mat4.scale(modelMatrix, modelMatrix, scale);
+
+    const normalMatrix = mat3.create();
+    mat3.fromMat4(normalMatrix, modelMatrix);
+    mat3.invert(normalMatrix, normalMatrix);
+    mat3.transpose(normalMatrix, normalMatrix);
+
+    setUniformMatrix4fv(gl, program, "uModelMatrix", modelMatrix);
+    setUniformMatrix3fv(gl, program, "uNormalMatrix", normalMatrix);
+    setUniform1i(gl, program, "uUseTexture", texture ? 1 : 0);
+    setUniform3f(gl, program, "uObjectColor", color);
+
+    if (texture) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        setUniform1i(gl, program, "uSampler", 0);
+    }
+
+    // Bind dos buffers do OBJ
+    const posLoc = gl.getAttribLocation(program, "aPosition");
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.position);
+    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(posLoc);
+
+    const normalLoc = gl.getAttribLocation(program, "aNormal");
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.normal);
+    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normalLoc);
+
+    const uvLoc = gl.getAttribLocation(program, "aTexCoord");
+    gl.bindBuffer(gl.ARRAY_BUFFER, model.uv);
+    gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(uvLoc);
+
+    // Desenhar
+    if (model.indices) {
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indices);
+        gl.drawElements(gl.TRIANGLES, model.indexCount, gl.UNSIGNED_SHORT, 0);
+    } else {
+        gl.drawArrays(gl.TRIANGLES, 0, model.count);
+    }
 }
 
 /**
@@ -577,9 +576,9 @@ function setupInput() {
 
 function updateCamera() {
     let f = [
-        Math.cos(glMatrix.toRadian(yaw)) * Math.cos(glMatrix.toRadian(pitch)),
-        Math.sin(glMatrix.toRadian(pitch)),
-        Math.sin(glMatrix.toRadian(yaw)) * Math.cos(glMatrix.toRadian(pitch))
+        Math.cos(toRadian(yaw)) * Math.cos(toRadian(pitch)),
+        Math.sin(toRadian(pitch)),
+        Math.sin(toRadian(yaw)) * Math.cos(toRadian(pitch))
     ];
     vec3.normalize(cameraFront, f);
 }
