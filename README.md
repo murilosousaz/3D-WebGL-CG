@@ -645,7 +645,7 @@ Colisão quando todos os eixos se sobrepõem
 7. Swap Buffers → 8. Request Next Frame
 ```
 
-## 👨‍💻 Autor
+## 👨‍💻 Autores
 
 - Eduardo Matias
 - Lucas Emanuel
