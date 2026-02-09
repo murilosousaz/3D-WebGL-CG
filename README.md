@@ -2,6 +2,8 @@
 
 > Uma galeria de arte virtual moderna e minimalista construída com WebGL puro, featuring sistema completo de carregamento de modelos OBJ, física realista e iluminação dinâmica.
 
+Vídeo demo: [Execução trabalho Computação Gráfica 3D - YouTube](https://youtu.be/e4V6IEollW8)
+
 [![WebGL](https://img.shields.io/badge/WebGL-2.0-990000?style=for-the-badge&logo=webgl)](https://www.khronos.org/webgl/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge&logo=javascript)](https://developer.mozilla.org/pt-BR/docs/Web/JavaScript)
 
@@ -25,6 +27,7 @@
 ## ✨ Características
 
 ### 🎨 **Sistema de Galeria**
+
 - ✅ Layout minimalista e moderno
 - ✅ 11 quadros distribuídos em 3 paredes
 - ✅ 4 pedestais para esculturas/modelos 3D
@@ -32,6 +35,7 @@
 - ✅ Iluminação cinematográfica dinâmica
 
 ### 🗿 **Carregamento de Modelos OBJ**
+
 - ✅ Parser OBJ completo e robusto
 - ✅ Suporte para todos os formatos de face (v, v/vt, v//vn, v/vt/vn)
 - ✅ Triangulação automática de quads e n-gons
@@ -40,6 +44,7 @@
 - ✅ Cache de vértices para otimização
 
 ### 🎮 **Física e Movimento**
+
 - ✅ Sistema de física com gravidade
 - ✅ Colisão AABB (Axis-Aligned Bounding Box)
 - ✅ Movimento suave com aceleração
@@ -48,12 +53,14 @@
 - ✅ Controle FPS com mouse lock
 
 ### 💡 **Iluminação**
+
 - ✅ Luz principal rotativa
 - ✅ Spots de destaque nas obras
 - ✅ Iluminação Phong/Blinn-Phong
 - ✅ Suporte para múltiplas fontes de luz
 
 ### 🎯 **Otimização**
+
 - ✅ Renderização eficiente
 - ✅ Sistema de cache
 - ✅ Performance otimizada para 60 FPS
@@ -71,62 +78,68 @@
 ### Instalação Rápida
 
 1. **Clone ou baixe o projeto**
-```bash
-git clone https://github.com/seu-usuario/galeria-3d.git
-cd galeria-3d
-```
+   
+   ```bash
+   git clone https://github.com/seu-usuario/galeria-3d.git
+   cd galeria-3d
+   ```
 
 2. **Estrutura básica de arquivos**
-```
-galeria-3d/
-├── index.html
-├── js/
-│   ├── main.js
-│   ├── obj_loader.js
-│   ├── camera.js
-│   ├── geometry.js
-│   ├── shader_loader.js
-│   └── utils.js
-├── glsl/
-│   ├── vertex.glsl
-│   └── fragment.glsl
-├── assets/
-│   ├── piso.jpg
-│   ├── parede.jpg
-│   ├── quadro.jpg
-│   ├── madeira.jpg
-│   ├── moon.obj
-│   ├── moon_00_0.png
-│   ├── sculpture1.obj       ⬅️ SEUS MODELOS
-│   ├── sculpture1.png
-│   ├── sculpture2.obj
-│   ├── sculpture2.png
-│   ├── artpiece.obj
-│   └── artpiece.png
-└── libs/
+   
+   ```
+   galeria-3d/
+   ├── index.html
+   ├── js/
+   │   ├── main.js
+   │   ├── obj_loader.js
+   │   ├── camera.js
+   │   ├── geometry.js
+   │   ├── shader_loader.js
+   │   └── utils.js
+   ├── glsl/
+   │   ├── vertex.glsl
+   │   └── fragment.glsl
+   ├── assets/
+   │   ├── piso.jpg
+   │   ├── parede.jpg
+   │   ├── quadro.jpg
+   │   ├── madeira.jpg
+   │   ├── moon.obj
+   │   ├── moon_00_0.png
+   │   ├── sculpture1.obj       ⬅️ SEUS MODELOS
+   │   ├── sculpture1.png
+   │   ├── sculpture2.obj
+   │   ├── sculpture2.png
+   │   ├── artpiece.obj
+   │   └── artpiece.png
+   └── libs/
     └── gl-matrix-min.js
-```
+   ```
 
 3. **Inicie um servidor local**
 
 **Opção 1 - Python 3:**
+
 ```bash
 python -m http.server 8000
 ```
 
 **Opção 2 - Node.js (npx):**
+
 ```bash
 npx http-server -p 8000
 ```
 
 **Opção 3 - VS Code:**
-- Instale a extensão "Live Server"
-- Clique direito em `index.html` → "Open with Live Server"
 
+- Instale a extensão "Live Server"
+
+- Clique direito em `index.html` → "Open with Live Server"
 4. **Acesse no navegador**
-```
-http://localhost:8000
-```
+   
+   ```
+   http://localhost:8000
+   ```
 
 5. **Clique na tela e comece a explorar! 🎉**
 
@@ -136,30 +149,30 @@ http://localhost:8000
 
 ### Arquivos Principais
 
-| Arquivo | Descrição |
-|---------|-----------|
-| **index.html** | Página principal com canvas WebGL |
-| **main.js** | Lógica principal, renderização, física |
-| **obj_loader.js** | 🆕 Parser de arquivos OBJ robusto |
-| **camera.js** | Sistema de câmera FPS |
-| **geometry.js** | Geometrias básicas (cubo) |
-| **shader_loader.js** | Carregador de shaders GLSL |
-| **utils.js** | Funções utilitárias (texturas, buffers) |
+| Arquivo              | Descrição                               |
+| -------------------- | --------------------------------------- |
+| **index.html**       | Página principal com canvas WebGL       |
+| **main.js**          | Lógica principal, renderização, física  |
+| **obj_loader.js**    | 🆕 Parser de arquivos OBJ robusto       |
+| **camera.js**        | Sistema de câmera FPS                   |
+| **geometry.js**      | Geometrias básicas (cubo)               |
+| **shader_loader.js** | Carregador de shaders GLSL              |
+| **utils.js**         | Funções utilitárias (texturas, buffers) |
 
 ### Arquivos de Configuração
 
-| Arquivo | Descrição |
-|---------|-----------|
-| **README.md** | Este arquivo (documentação principal) |
-| **QUICK_START.md** | Guia rápido em 3 passos |
-| **LAYOUT_GUIDE.md** | Mapa visual da galeria |
-| **DEBUG_OBJ.md** | Troubleshooting de modelos OBJ |
-| **FIX_QUADROS.md** | Correção dos quadros nas paredes |
+| Arquivo             | Descrição                             |
+| ------------------- | ------------------------------------- |
+| **README.md**       | Este arquivo (documentação principal) |
+| **QUICK_START.md**  | Guia rápido em 3 passos               |
+| **LAYOUT_GUIDE.md** | Mapa visual da galeria                |
+| **DEBUG_OBJ.md**    | Troubleshooting de modelos OBJ        |
+| **FIX_QUADROS.md**  | Correção dos quadros nas paredes      |
 
 ### Ferramentas
 
-| Arquivo | Descrição |
-|---------|-----------|
+| Arquivo           | Descrição                           |
+| ----------------- | ----------------------------------- |
 | **test_obj.html** | 🔍 Validador visual de arquivos OBJ |
 
 ---
@@ -168,23 +181,23 @@ http://localhost:8000
 
 ### Teclado
 
-| Tecla | Ação |
-|-------|------|
-| **W** | Mover para frente |
-| **S** | Mover para trás |
-| **A** | Mover para esquerda (strafe) |
-| **D** | Mover para direita (strafe) |
-| **Shift** | Correr (2x velocidade) |
-| **Espaço** | Pular |
-| **Arrow Keys** | Alternativa para WASD |
+| Tecla          | Ação                         |
+| -------------- | ---------------------------- |
+| **W**          | Mover para frente            |
+| **S**          | Mover para trás              |
+| **A**          | Mover para esquerda (strafe) |
+| **D**          | Mover para direita (strafe)  |
+| **Shift**      | Correr (2x velocidade)       |
+| **Espaço**     | Pular                        |
+| **Arrow Keys** | Alternativa para WASD        |
 
 ### Mouse
 
-| Ação | Controle |
-|------|----------|
-| **Clique** | Travar cursor (Pointer Lock) |
+| Ação          | Controle                     |
+| ------------- | ---------------------------- |
+| **Clique**    | Travar cursor (Pointer Lock) |
 | **Movimento** | Olhar ao redor (yaw e pitch) |
-| **ESC** | Liberar cursor |
+| **ESC**       | Liberar cursor               |
 
 ### Dicas de Navegação
 
@@ -201,6 +214,7 @@ http://localhost:8000
 #### **1️⃣ Preparar Arquivos**
 
 Coloque na pasta `assets/`:
+
 ```
 assets/
 ├── sculpture1.obj    ⬅️ Seu modelo 3D
@@ -210,6 +224,7 @@ assets/
 #### **2️⃣ O Sistema Carrega Automaticamente**
 
 Os seguintes arquivos são carregados automaticamente:
+
 - ✅ `moon.obj` + `moon_00_0.png` (já incluído)
 - ⬜ `sculpture1.obj` + `sculpture1.png`
 - ⬜ `sculpture2.obj` + `sculpture2.png`
@@ -241,6 +256,7 @@ Recarregue a página e seus modelos aparecerão na galeria!
 ### Requisitos do Arquivo OBJ
 
 ✅ **Formatos Suportados:**
+
 ```obj
 f 1 2 3              # Apenas vértices
 f 1/1 2/2 3/3        # Vértices + UVs
@@ -249,12 +265,14 @@ f 1/1/1 2/2/2 3/3/3  # Completo (RECOMENDADO)
 ```
 
 ✅ **Características:**
+
 - Vértices (v)
 - Normais (vn) - opcional, serão calculadas
 - UVs (vt) - opcional, mas recomendado para texturas
 - Faces triangulares ou quads (serão trianguladas)
 
 ❌ **Não Suportado:**
+
 - Materiais MTL complexos
 - Curvas NURBS
 - Subdivisão de superfície
@@ -283,6 +301,7 @@ if (objModels.sculpture1) {
 ### Adicionar Novo Modelo
 
 **1. Carregar o modelo** (em `init()`):
+
 ```javascript
 const myModelData = await loadOBJ('assets/mymodel.obj');
 if (myModelData) {
@@ -292,11 +311,13 @@ if (myModelData) {
 ```
 
 **2. Adicionar colisão** (em `initCollisionObjects()`):
+
 ```javascript
 { type: 'box', pos: [X, 0.6, Z], size: [2, 1.2, 2] },
 ```
 
 **3. Desenhar** (em `drawGallery()`):
+
 ```javascript
 drawPedestal([X, 0.6, Z], [2, 1.2, 2]);
 if (objModels.mymodel) {
@@ -327,16 +348,19 @@ drawSpotLight([5, 6, 5], [0.8, 1, 0.9]);    // Verde água
 ### Adicionar Quadros
 
 **Parede do Fundo:**
+
 ```javascript
 drawArtFrame([X, 3.5, -29.5], [3.5, 2.8, 0.2], [0, 0, 0]);
 ```
 
 **Parede Esquerda:**
+
 ```javascript
 drawArtFrame([-14.5, 3.5, Z], [0.2, 2.2, 2.8], [0, Math.PI/2, 0]);
 ```
 
 **Parede Direita:**
+
 ```javascript
 drawArtFrame([14.5, 3.5, Z], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
 ```
@@ -348,6 +372,7 @@ drawArtFrame([14.5, 3.5, Z], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
 ### ❓ Modelo não aparece
 
 **Verifique no console (F12):**
+
 ```
 ✅ assets/sculpture1.obj carregado com sucesso!  ← Deve aparecer
    Vértices: 1234
@@ -356,6 +381,7 @@ drawArtFrame([14.5, 3.5, Z], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
 ```
 
 **Soluções:**
+
 1. Confirme que o arquivo está em `assets/`
 2. Verifique o nome exato do arquivo
 3. Use `test_obj.html` para validar o arquivo
@@ -365,6 +391,7 @@ drawArtFrame([14.5, 3.5, Z], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
 ### ❓ Modelo aparece distorcido
 
 **Soluções:**
+
 ```javascript
 // Tente diferentes escalas
 [0.1, 0.1, 0.1]   // Modelo muito grande?
@@ -382,17 +409,21 @@ drawArtFrame([14.5, 3.5, Z], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
 ### ❓ Modelo aparece todo preto
 
 **Soluções:**
+
 1. **Verificar normais:**
+   
    ```javascript
    console.log("Normais:", objModels.sculpture1.normal ? "✓" : "✗");
    ```
 
 2. **Adicionar luz próxima:**
+   
    ```javascript
    drawSpotLight([posX, posY + 2, posZ], [1, 1, 1]);
    ```
 
 3. **Testar sem textura:**
+   
    ```javascript
    drawOBJModel(model, pos, scale, rot, 
        null,        // SEM textura
@@ -403,11 +434,13 @@ drawArtFrame([14.5, 3.5, Z], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
 ### ❓ Textura não aparece
 
 **Checklist:**
+
 - [ ] Arquivo `.png` ou `.jpg` existe?
 - [ ] Nome correto no código?
 - [ ] Modelo tem UVs? (verificar no `test_obj.html`)
 
 **Se modelo não tem UVs:**
+
 ```javascript
 // Use cor sólida ao invés de textura
 drawOBJModel(model, pos, scale, rot, 
@@ -421,6 +454,7 @@ drawOBJModel(model, pos, scale, rot,
 **Soluções:**
 
 1. **Verificar contagem de vértices:**
+   
    ```
    Use test_obj.html
    
@@ -431,11 +465,13 @@ drawOBJModel(model, pos, scale, rot,
    ```
 
 2. **Simplificar no Blender:**
+   
    - Add Modifier → Decimate
    - Ratio: 0.5 (reduz 50%)
    - Apply → Export novamente
 
 3. **Renderizar condicionalmente:**
+   
    ```javascript
    const distance = Math.sqrt(
        Math.pow(cameraPos[0] - posX, 2) + 
@@ -454,11 +490,13 @@ drawOBJModel(model, pos, scale, rot,
 **Solução:** Use um servidor HTTP local (veja [Quick Start](#-quick-start))
 
 ❌ **Não funciona:**
+
 ```
 file:///C:/Users/projeto/index.html
 ```
 
 ✅ **Funciona:**
+
 ```
 http://localhost:8000
 ```
@@ -470,8 +508,11 @@ http://localhost:8000
 ### Passo a Passo
 
 1. **Selecione seu modelo**
+
 2. **File → Export → Wavefront (.obj)**
+
 3. **Configurações de Export:**
+   
    ```
    ✓ Selection Only (se quiser só o selecionado)
    ✓ Apply Modifiers
@@ -483,12 +524,15 @@ http://localhost:8000
    Objects as OBJ Objects: Off
    Material Groups: Off
    ```
+
 4. **Export**
+
 5. **Teste no `test_obj.html`**
 
 ### Otimizar Modelo
 
 **Reduzir polígonos:**
+
 1. Select model → Tab (Edit Mode)
 2. Add Modifier → Decimate
 3. Ratio: 0.5 (ajuste conforme necessário)
@@ -496,6 +540,7 @@ http://localhost:8000
 5. Re-export
 
 **UV Unwrap (para texturas):**
+
 1. Tab (Edit Mode) → A (Select All)
 2. U → Smart UV Project
 3. Tab (Object Mode)
@@ -506,6 +551,7 @@ http://localhost:8000
 ## 🌟 Exemplos de Uso
 
 ### Galeria de Arte Clássica
+
 ```javascript
 // Estátuas greco-romanas
 sculpture1.obj → Vênus de Milo
@@ -514,6 +560,7 @@ artpiece.obj → Discóbolo
 ```
 
 ### Museu de História Natural
+
 ```javascript
 sculpture1.obj → Fóssil de dinossauro
 sculpture2.obj → Esqueleto de mamute
@@ -521,6 +568,7 @@ artpiece.obj → Meteorito
 ```
 
 ### Exposição de Arte Moderna
+
 ```javascript
 sculpture1.obj → Escultura abstrata 1
 sculpture2.obj → Instalação interativa
@@ -528,6 +576,7 @@ artpiece.obj → Obra central rotativa
 ```
 
 ### Showroom de Produtos
+
 ```javascript
 sculpture1.obj → Produto A
 sculpture2.obj → Produto B
@@ -565,6 +614,7 @@ artpiece.obj → Produto destaque
 ### Sistema de Colisão
 
 Usa **AABB** (Axis-Aligned Bounding Box):
+
 ```
 Player Box:
   Min: [x - radius, y - height, z - radius]
