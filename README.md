@@ -645,87 +645,10 @@ Colisão quando todos os eixos se sobrepõem
 7. Swap Buffers → 8. Request Next Frame
 ```
 
----
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! 
-
-### Como Contribuir
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Add: Minha feature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
-
-### Áreas para Contribuição
-
-- 🎮 Controles touch para mobile
-- 🎨 Mais geometrias primitivas
-- 💡 Efeitos de iluminação avançados
-- 🔊 Sistema de áudio espacial
-- 📊 Melhor sistema de LOD (Level of Detail)
-- 🌐 Suporte para mais formatos 3D
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
-```
-MIT License
-
-Copyright (c) 2025
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction...
-```
-
----
-
 ## 👨‍💻 Autor
 
-Desenvolvido com ❤️ usando WebGL puro
-
-**Tecnologias:**
-- WebGL 2.0
-- JavaScript ES6+
-- GLSL (Shaders)
-- gl-matrix (Matemática 3D)
-
----
-
-## 🙏 Agradecimentos
-
-- Comunidade WebGL
-- MDN Web Docs
-- Khronos Group
-- gl-matrix library
-- Todos os contribuidores
-
----
-
-## 📞 Suporte
-
-Encontrou um bug? Tem uma sugestão?
-
-- 🐛 [Reporte Issues](https://github.com/seu-usuario/galeria-3d/issues)
-- 💡 [Sugestões](https://github.com/seu-usuario/galeria-3d/discussions)
-- 📧 Email: seu-email@exemplo.com
-
----
-
-<div align="center">
-
-### ⭐ Se este projeto te ajudou, considere dar uma estrela!
-
-**[🏠 Voltar ao Início](#-galeria-de-arte-3d-interativa---webgl)**
-
----
-
-Made with 💜 and WebGL | © 2025
+- Eduardo Matias
+- Lucas Emanuel
+- Murilo Sousa
 
 </div>
