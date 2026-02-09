@@ -6,8 +6,6 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge&logo=javascript)](https://developer.mozilla.org/pt-BR/docs/Web/JavaScript)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-![Galeria Preview](https://via.placeholder.com/1200x600/667eea/ffffff?text=Galeria+de+Arte+3D)
-
 ---
 
 ## 📋 Índice
