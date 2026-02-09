@@ -3,9 +3,6 @@ import ShaderLoader from './shader_loader.js';
 import {createCubeData} from './geometry.js';
 import { loadTexture, initBuffers, setUniformMatrix4fv, isPowerOf2, setUniformMatrix3fv, setUniform3f, setUniform1f, setUniform1i, bindBuffers } from './utils.js';
 
-
-
-
 const toRadian = window.glMatrix.glMatrix.toRadian;
 const mat4 = window.mat4 || (window.glMatrix ? window.glMatrix.mat4 : null);
 const mat3 = window.mat3 || (window.glMatrix ? window.glMatrix.mat3 : null);
@@ -52,15 +49,13 @@ const groundLevel = 0;
 const moveSpeed = 12.0;
 const acceleration = 0.8;
 
-// Luz
+// Luz (reduzida e mais elegante)
 let lightPositions = [
-    [0, 5, 0],
-    [15, 5, -10],
-    [-15, 5, -10],
-    [0, 5, -30]
+    [0, 6, 0],      // Luz central
+    [0, 6, -25],    // Luz da galeria de fundo
 ];
 
-// Lista de objetos colidíveis
+// Lista de objetos colidíveis (simplificada)
 let collisionObjects = [];
 
 /**
@@ -78,7 +73,7 @@ async function init() {
         return;
     }
 
-    console.log("WebGL inicializado. Carregando recursos...");
+    console.log("🎨 WebGL inicializado. Carregando galeria de arte...");
 
     try {
         program = await ShaderLoader.createProgramFromFiles(gl, 'glsl/vertex.glsl', 'glsl/fragment.glsl');
@@ -86,66 +81,76 @@ async function init() {
         const cubeData = createCubeData();
         buffers = initBuffers(gl, cubeData);
 
-        // Carregar texturas do museu
+        // Carregar texturas
         textures.floor = loadTexture(gl, 'assets/piso.jpg');
         textures.art = loadTexture(gl, 'assets/quadro.jpg');
         textures.wall = loadTexture(gl, 'assets/parede.jpg');
         textures.wood = loadTexture(gl, 'assets/madeira.jpg');
+        textures.marble = loadTexture(gl, 'assets/marble.jpg'); // Nova textura de mármore
 
-        // === CARREGAR MODELO OBJ DA LUA ===
-        console.log("Carregando modelo da lua...");
+        // === CARREGAR MODELOS OBJ ===
+        console.log("📦 Carregando modelos 3D...");
+        
+        // Lua
         const moonData = await loadOBJ('assets/moon.obj');
         if (moonData) {
             objModels.moon = initOBJBuffers(gl, moonData);
-            
-            // Carregar texturas da lua
-            objTextures.moonDiffuse = loadTexture(gl, 'assets/moon_00_0.png');
-            objTextures.moonSpecular = loadTexture(gl, 'assets/moon_00_0_sp.png');
-            
-            console.log("✓ Modelo da lua carregado com sucesso!");
-        } else {
-            console.error("✗ Erro ao carregar modelo da lua");
+            objTextures.moon = loadTexture(gl, 'assets/moon_00_0.png');
+            console.log("✓ Lua carregada");
+        }
+
+        // Escultura 1 (pode ser uma estátua, vaso, etc.)
+        const sculpture1Data = await loadOBJ('assets/sculpture1.obj');
+        if (sculpture1Data) {
+            objModels.sculpture1 = initOBJBuffers(gl, sculpture1Data);
+            objTextures.sculpture1 = loadTexture(gl, 'assets/sculpture1.png');
+            console.log("✓ Escultura 1 carregada");
+        }
+
+        // Escultura 2
+        const sculpture2Data = await loadOBJ('assets/sculpture2.obj');
+        if (sculpture2Data) {
+            objModels.sculpture2 = initOBJBuffers(gl, sculpture2Data);
+            objTextures.sculpture2 = loadTexture(gl, 'assets/sculpture2.png');
+            console.log("✓ Escultura 2 carregada");
+        }
+
+        // Objeto artístico central
+        const artPieceData = await loadOBJ('assets/artpiece.obj');
+        if (artPieceData) {
+            objModels.artpiece = initOBJBuffers(gl, artPieceData);
+            objTextures.artpiece = loadTexture(gl, 'assets/artpiece.png');
+            console.log("✓ Obra central carregada");
         }
 
         setupInput();
         initCollisionObjects();
 
-        console.log("Pronto! WASD: mover | Shift: correr | Espaço: pular");
+        console.log("✨ Galeria pronta! WASD: mover | Shift: correr | Espaço: pular");
         
         requestAnimationFrame(render);
 
     } catch (e) {
-        console.error("ERRO CRÍTICO NA INICIALIZAÇÃO:", e.message);
+        console.error("❌ ERRO CRÍTICO NA INICIALIZAÇÃO:", e.message);
     }
 }
 
 /**
- * Inicializa os objetos de colisão
+ * Inicializa os objetos de colisão - LAYOUT SIMPLIFICADO
  */
 function initCollisionObjects() {
     collisionObjects = [
-        // Paredes externas
-        { type: 'box', pos: [0, 4, -30], size: [40, 8, 0.3] },
-        { type: 'box', pos: [-15, 4, 30], size: [10, 8, 0.3] },
-        { type: 'box', pos: [15, 4, 30], size: [10, 8, 0.3] },
-        { type: 'box', pos: [-20, 4, 0], size: [0.3, 8, 60] },
-        { type: 'box', pos: [20, 4, 0], size: [0.3, 8, 60] },
+        // === PAREDES EXTERNAS (apenas necessárias) ===
+        { type: 'box', pos: [0, 4, -30], size: [30, 8, 0.5] },      // Parede do fundo
+        { type: 'box', pos: [-15, 4, 0], size: [0.5, 8, 60] },      // Parede esquerda
+        { type: 'box', pos: [15, 4, 0], size: [0.5, 8, 60] },       // Parede direita
+        { type: 'box', pos: [0, 4, 30], size: [30, 8, 0.5] },       // Parede entrada
         
-        // Divisórias internas
-        { type: 'box', pos: [-10, 4, -10], size: [0.2, 8, 15] },
-        { type: 'box', pos: [10, 4, -10], size: [0.2, 8, 15] },
-        { type: 'box', pos: [0, 4, 10], size: [30, 8, 0.2] },
-        
-        // Pedestais
-        { type: 'box', pos: [0, 0.5, -15], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [7, 0.5, 0], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [-7, 0.5, 0], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [0, 0.5, 5], size: [2.5, 1, 2.5] },
-        
-        // Pedestais das luas
-        { type: 'box', pos: [0, 0.5, -20], size: [2, 1, 2] },
-        { type: 'box', pos: [-12, 0.5, -25], size: [1.5, 1, 1.5] },
-        { type: 'box', pos: [12, 0.5, -25], size: [1.5, 1, 1.5] }
+        // === PEDESTAIS CENTRAIS ===
+        { type: 'box', pos: [0, 0.6, -20], size: [2.5, 1.2, 2.5] },    // Pedestal central fundo
+        { type: 'box', pos: [-8, 0.6, -10], size: [2, 1.2, 2] },       // Pedestal esquerda
+        { type: 'box', pos: [8, 0.6, -10], size: [2, 1.2, 2] },        // Pedestal direita
+        { type: 'box', pos: [0, 0.8, 0], size: [3, 1.6, 3] },          // Pedestal central principal (maior)
     ];
 }
 
@@ -195,7 +200,7 @@ function render(now) {
     updatePhysics(deltaTime);
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.clearColor(0.05, 0.05, 0.1, 1.0); 
+    gl.clearColor(0.08, 0.08, 0.12, 1.0); // Fundo azul escuro elegante
     gl.enable(gl.DEPTH_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -209,15 +214,16 @@ function render(now) {
     vec3.add(target, cameraPos, cameraFront);
     mat4.lookAt(viewMatrix, cameraPos, target, cameraUp);
 
-    lightPositions[0] = [Math.sin(now) * 8, 5.0, Math.cos(now) * 8];
+    // Luz principal rotativa suave
+    lightPositions[0] = [Math.sin(now * 0.3) * 5, 6.0, Math.cos(now * 0.3) * 5 - 10];
 
     setUniformMatrix4fv(gl, program, "uProjectionMatrix", projectionMatrix);
     setUniformMatrix4fv(gl, program, "uViewMatrix", viewMatrix);
     setUniform3f(gl, program, "uLightPos", lightPositions[0]);
     setUniform3f(gl, program, "uViewPos", cameraPos);
-    setUniform3f(gl, program, "uLightColor", [1.0, 1.0, 0.9]);
+    setUniform3f(gl, program, "uLightColor", [1.0, 0.98, 0.95]); // Luz quente suave
 
-    drawMuseum(now);
+    drawGallery(now);
 
     requestAnimationFrame(render);
 }
@@ -241,7 +247,8 @@ function updatePhysics(deltaTime) {
         cameraPos[2] + velocity[2] * deltaTime
     ];
 
-    if (newPos[1] - playerHeight <= groundLevel) {
+    // Colisão com o chão
+    if (newPos[1] - playerHeight < groundLevel) {
         newPos[1] = groundLevel + playerHeight;
         velocity[1] = 0;
         isGrounded = true;
@@ -249,11 +256,17 @@ function updatePhysics(deltaTime) {
         isGrounded = false;
     }
 
-    const resolvedPos = resolveCollisions(newPos);
-    
-    cameraPos[0] = resolvedPos[0];
-    cameraPos[1] = resolvedPos[1];
-    cameraPos[2] = resolvedPos[2];
+    // Colisão com objetos
+    let finalPos = [...newPos];
+    for (const obj of collisionObjects) {
+        if (obj.type === 'box') {
+            finalPos = resolveBoxCollision(finalPos, obj.pos, obj.size);
+        }
+    }
+
+    cameraPos[0] = finalPos[0];
+    cameraPos[1] = finalPos[1];
+    cameraPos[2] = finalPos[2];
 
     if (isGrounded) {
         velocity[0] *= friction;
@@ -262,291 +275,222 @@ function updatePhysics(deltaTime) {
 }
 
 /**
- * Resolve colisões com objetos
+ * Resolve colisão AABB (Axis-Aligned Bounding Box)
  */
-function resolveCollisions(pos) {
-    let resolvedPos = [...pos];
-
-    for (let obj of collisionObjects) {
-        if (obj.type === 'box') {
-            const collision = checkBoxCollision(resolvedPos, obj);
-            if (collision) {
-                resolvedPos = collision.resolvedPos;
-                
-                if (Math.abs(collision.normal[0]) > 0.5) velocity[0] = 0;
-                if (Math.abs(collision.normal[2]) > 0.5) velocity[2] = 0;
-            }
-        }
-    }
-
-    return resolvedPos;
-}
-
-/**
- * Verifica colisão com caixa (AABB)
- */
-function checkBoxCollision(playerPos, box) {
-    const halfSize = [box.size[0] / 2, box.size[1] / 2, box.size[2] / 2];
+function resolveBoxCollision(playerPos, boxPos, boxSize) {
+    const halfSize = [boxSize[0] / 2, boxSize[1] / 2, boxSize[2] / 2];
     
-    const closest = [
-        Math.max(box.pos[0] - halfSize[0], Math.min(playerPos[0], box.pos[0] + halfSize[0])),
-        Math.max(box.pos[1] - halfSize[1], Math.min(playerPos[1], box.pos[1] + halfSize[1])),
-        Math.max(box.pos[2] - halfSize[2], Math.min(playerPos[2], box.pos[2] + halfSize[2]))
+    const playerMin = [
+        playerPos[0] - playerRadius,
+        playerPos[1] - playerHeight,
+        playerPos[2] - playerRadius
     ];
-
-    const distance = Math.sqrt(
-        Math.pow(playerPos[0] - closest[0], 2) +
-        Math.pow(playerPos[1] - closest[1], 2) +
-        Math.pow(playerPos[2] - closest[2], 2)
-    );
-
-    if (distance < playerRadius) {
-        let normal = [
-            playerPos[0] - closest[0],
-            playerPos[1] - closest[1],
-            playerPos[2] - closest[2]
-        ];
-
-        const len = Math.sqrt(normal[0]**2 + normal[1]**2 + normal[2]**2);
-        if (len > 0) {
-            normal[0] /= len;
-            normal[1] /= len;
-            normal[2] /= len;
+    const playerMax = [
+        playerPos[0] + playerRadius,
+        playerPos[1],
+        playerPos[2] + playerRadius
+    ];
+    
+    const boxMin = [
+        boxPos[0] - halfSize[0],
+        boxPos[1] - halfSize[1],
+        boxPos[2] - halfSize[2]
+    ];
+    const boxMax = [
+        boxPos[0] + halfSize[0],
+        boxPos[1] + halfSize[1],
+        boxPos[2] + halfSize[2]
+    ];
+    
+    const overlapX = playerMax[0] > boxMin[0] && playerMin[0] < boxMax[0];
+    const overlapY = playerMax[1] > boxMin[1] && playerMin[1] < boxMax[1];
+    const overlapZ = playerMax[2] > boxMin[2] && playerMin[2] < boxMax[2];
+    
+    if (overlapX && overlapY && overlapZ) {
+        const pushX = Math.min(
+            Math.abs(playerMax[0] - boxMin[0]),
+            Math.abs(playerMin[0] - boxMax[0])
+        );
+        const pushZ = Math.min(
+            Math.abs(playerMax[2] - boxMin[2]),
+            Math.abs(playerMin[2] - boxMax[2])
+        );
+        
+        if (pushX < pushZ) {
+            if (playerPos[0] < boxPos[0]) {
+                playerPos[0] = boxMin[0] - playerRadius - 0.01;
+            } else {
+                playerPos[0] = boxMax[0] + playerRadius + 0.01;
+            }
+            velocity[0] = 0;
+        } else {
+            if (playerPos[2] < boxPos[2]) {
+                playerPos[2] = boxMin[2] - playerRadius - 0.01;
+            } else {
+                playerPos[2] = boxMax[2] + playerRadius + 0.01;
+            }
+            velocity[2] = 0;
         }
-
-        const penetration = playerRadius - distance;
-        const resolvedPos = [
-            playerPos[0] + normal[0] * penetration,
-            playerPos[1] + normal[1] * penetration,
-            playerPos[2] + normal[2] * penetration
-        ];
-
-        return { resolvedPos, normal };
     }
-
-    return null;
+    
+    return playerPos;
 }
 
 /**
- * Desenha todo o ambiente do museu
+ * DESENHA A GALERIA - VERSÃO LIMPA E MODERNA
  */
-function drawMuseum(time) {
-    // === ESTRUTURA BÁSICA ===
-    drawObject([0, 0, 0], [40, 0.1, 60], [0, 0, 0], textures.floor, true);
-    drawObject([0, 8, 0], [40, 0.1, 60], [0, 0, 0], null, false, [0.9, 0.9, 0.9]);
+function drawGallery(time) {
+    // === PISO DE MÁRMORE ===
+    drawObject([0, 0, 0], [30, 0.1, 60], [0, 0, 0], textures.floor, true);
     
-    // Paredes externas
-    drawObject([0, 4, -30], [40, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([-15, 4, 30], [10, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([15, 4, 30], [10, 8, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([0, 7, 30], [10, 2, 0.3], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([-20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
-    drawObject([20, 4, 0], [0.3, 8, 60], [0, 0, 0], null, false, [0.85, 0.85, 0.82]);
+    // === PAREDES PRINCIPAIS (textura de parede elegante) ===
+    // Parede do fundo
+    drawObject([0, 4, -30], [30, 8, 0.5], [0, 0, 0], textures.wall, true);
     
-    // Divisórias internas
-    drawObject([-10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
-    drawObject([10, 4, -10], [0.2, 8, 15], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
-    drawObject([0, 4, 10], [30, 8, 0.2], [0, 0, 0], null, false, [0.8, 0.8, 0.78]);
+    // Paredes laterais
+    drawObject([-15, 4, 0], [0.5, 8, 60], [0, 0, 0], textures.wall, true);
+    drawObject([15, 4, 0], [0.5, 8, 60], [0, 0, 0], textures.wall, true);
     
-    // === GALERIA PAREDE DE FUNDO (muito mais quadros) ===
+    // Teto minimalista
+    drawObject([0, 8, 0], [30, 0.2, 60], [0, 0, 0], null, false, [0.95, 0.95, 0.95]);
     
-    // Linha superior de quadros pequenos
-    for (let i = -3; i <= 3; i++) {
-        if (i !== 0) { // Pula o centro
-            drawObject([i * 5, 6.5, -29.5], [2, 1.5, 0.1], [0, 0, 0], textures.art, true);
-            drawFrame([i * 5, 6.5, -29.4], [2.2, 1.7, 0.15]);
-        }
+    // === QUADROS NAS PAREDES ===
+    
+    // Parede do fundo - 3 quadros horizontais
+    drawArtFrame([-10, 3.5, -29.5], [3.5, 2.8, 0.2], [0, 0, 0]);
+    drawArtFrame([0, 3.5, -29.5], [3.5, 2.8, 0.2], [0, 0, 0]);
+    drawArtFrame([10, 3.5, -29.5], [3.5, 2.8, 0.2], [0, 0, 0]);
+    
+    // Parede esquerda - 4 quadros
+    drawArtFrame([-14.5, 3.5, -20], [0.2, 2.2, 2.8], [0, Math.PI/2, 0]);
+    drawArtFrame([-14.5, 3.5, -10], [0.2, 2.2, 2.8], [0, Math.PI/2, 0]);
+    drawArtFrame([-14.5, 3.5, 5], [0.2, 2.2, 2.8], [0, Math.PI/2, 0]);
+    drawArtFrame([-14.5, 3.5, 15], [0.2, 2.2, 2.8], [0, Math.PI/2, 0]);
+    
+    // Parede direita - 4 quadros
+    drawArtFrame([14.5, 3.5, -20], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
+    drawArtFrame([14.5, 3.5, -10], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
+    drawArtFrame([14.5, 3.5, 5], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
+    drawArtFrame([14.5, 3.5, 15], [0.2, 2.2, 2.8], [0, -Math.PI/2, 0]);
+    
+    // === PEDESTAIS E ESCULTURAS OBJ ===
+    
+    // Pedestal central principal com obra rotativa
+    drawPedestal([0, 0.8, 0], [3, 1.6, 3], [0.9, 0.9, 0.9]);
+    if (objModels.artpiece) {
+        drawOBJModel(
+            objModels.artpiece,
+            [0, 3.0, 0],
+            [2.0, 2.0, 2.0],
+            [0, time * 0.3, 0], // Rotação suave
+            objTextures.artpiece
+        );
     }
     
-    // Linha do meio - Quadro grande central
-    drawObject([0, 4, -29.5], [6, 5, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([0, 4, -29.4], [6.3, 5.3, 0.15]);
-    
-    // Quadros médios ao lado do grande
-    drawObject([-10, 4, -29.5], [4, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-10, 4, -29.4], [4.3, 3.3, 0.15]);
-    
-    drawObject([10, 4, -29.5], [4, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([10, 4, -29.4], [4.3, 3.3, 0.15]);
-    
-    // Quadros nas extremidades
-    drawObject([-16, 4, -29.5], [3, 2.5, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-16, 4, -29.4], [3.2, 2.7, 0.15]);
-    
-    drawObject([16, 4, -29.5], [3, 2.5, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([16, 4, -29.4], [3.2, 2.7, 0.15]);
-    
-    // Linha inferior de quadros
-    drawObject([-12, 2, -29.5], [2.5, 2, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-12, 2, -29.4], [2.7, 2.2, 0.15]);
-    
-    drawObject([12, 2, -29.5], [2.5, 2, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([12, 2, -29.4], [2.7, 2.2, 0.15]);
-    
-    // === GALERIA LATERAL ESQUERDA (mais quadros) ===
-    
-    // Sequência vertical completa
-    for (let z = -20; z <= 20; z += 5) {
-        drawObject([-19.5, 3.5, z], [0.1, 3, 3.5], [0, 0, 0], textures.art, true);
-        drawFrame([-19.4, 3.5, z], [0.15, 3.3, 3.8]);
-    }
-    
-    // Quadros pequenos intercalados
-    for (let z = -17.5; z <= 17.5; z += 5) {
-        drawObject([-19.5, 6, z], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-        drawFrame([-19.4, 6, z], [0.15, 1.7, 2.2]);
-    }
-    
-    // === GALERIA LATERAL DIREITA (mais quadros) ===
-    
-    // Sequência vertical completa
-    for (let z = -20; z <= 20; z += 5) {
-        drawObject([19.5, 3.5, z], [0.1, 3, 3.5], [0, 0, 0], textures.art, true);
-        drawFrame([19.4, 3.5, z], [0.15, 3.3, 3.8]);
-    }
-    
-    // Quadros pequenos intercalados
-    for (let z = -17.5; z <= 17.5; z += 5) {
-        drawObject([19.5, 6, z], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-        drawFrame([19.4, 6, z], [0.15, 1.7, 2.2]);
-    }
-    
-    // === DIVISÓRIAS CENTRAIS COM QUADROS (ambos os lados) ===
-    
-    // Divisória esquerda - lado frontal
-    drawObject([-9.9, 3.5, -5], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([-9.8, 3.5, -5], [0.15, 3.3, 4.3]);
-    
-    drawObject([-9.9, 6, -5], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([-9.8, 6, -5], [0.15, 1.7, 2.2]);
-    
-    // Divisória esquerda - lado traseiro
-    drawObject([-10.1, 3.5, -15], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([-10.2, 3.5, -15], [0.15, 3.3, 4.3]);
-    
-    drawObject([-10.1, 6, -15], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([-10.2, 6, -15], [0.15, 1.7, 2.2]);
-    
-    drawObject([-10.1, 3.5, -10], [0.1, 3, 2.5], [0, 0, 0], textures.art, true);
-    drawFrame([-10.2, 3.5, -10], [0.15, 3.3, 2.7]);
-    
-    // Divisória direita - lado frontal
-    drawObject([9.9, 3.5, -5], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([9.8, 3.5, -5], [0.15, 3.3, 4.3]);
-    
-    drawObject([9.9, 6, -5], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([9.8, 6, -5], [0.15, 1.7, 2.2]);
-    
-    // Divisória direita - lado traseiro
-    drawObject([10.1, 3.5, -15], [0.1, 3, 4], [0, 0, 0], textures.art, true);
-    drawFrame([10.2, 3.5, -15], [0.15, 3.3, 4.3]);
-    
-    drawObject([10.1, 6, -15], [0.1, 1.5, 2], [0, 0, 0], textures.art, true);
-    drawFrame([10.2, 6, -15], [0.15, 1.7, 2.2]);
-    
-    drawObject([10.1, 3.5, -10], [0.1, 3, 2.5], [0, 0, 0], textures.art, true);
-    drawFrame([10.2, 3.5, -10], [0.15, 3.3, 2.7]);
-    
-    // === PAREDE FRONTAL - QUADROS NA ENTRADA ===
-    
-    // Lado esquerdo da entrada
-    drawObject([-17, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-17, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    drawObject([-12, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([-12, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    // Lado direito da entrada
-    drawObject([17, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([17, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    drawObject([12, 4, 29.5], [2.5, 3, 0.1], [0, 0, 0], textures.art, true);
-    drawFrame([12, 4, 29.6], [2.7, 3.2, 0.15]);
-    
-    // === ESCULTURAS ANIMADAS ===
-    
-    const rot1 = time * 0.5;
-    drawObject([0, 2, -15], [1, 3, 1], [0, rot1, 0], null, false, [0.8, 0.3, 0.2]);
-    drawPedestal([0, 0.5, -15], [1.5, 1, 1.5]);
-    
-    const scale2 = 1 + Math.sin(time * 2) * 0.2;
-    drawObject([7, 1.5, 0], [scale2, scale2 * 2, scale2], [0, 0, 0], null, false, [0.2, 0.6, 0.8]);
-    drawPedestal([7, 0.5, 0], [1.5, 1, 1.5]);
-    
-    const rot3 = Math.sin(time) * 0.5;
-    drawObject([-7, 2, 0], [0.8, 3.5, 0.8], [rot3, 0, rot3], null, false, [0.9, 0.7, 0.1]);
-    drawPedestal([-7, 0.5, 0], [1.5, 1, 1.5]);
-    
-    drawObject([0, 1.5, 5], [2, 0.5, 2], [time * 0.3, 0, 0], null, false, [0.5, 0.5, 0.5]);
-    drawPedestal([0, 0.5, 5], [2.5, 1, 2.5]);
-    
-    // === MODELOS DA LUA (OBJ) ===
+    // Pedestal do fundo com a Lua
+    drawPedestal([0, 0.6, -20], [2.5, 1.2, 2.5], [0.85, 0.85, 0.85]);
     if (objModels.moon) {
-        // Lua principal girando lentamente no centro do museu
-        const moonRotation = time * 0.3;
-        const moonHeight = 3 + Math.sin(time * 0.5) * 0.5; // Flutua suavemente
-        
         drawOBJModel(
             objModels.moon,
-            [0, moonHeight, -20], // Posição
-            [2, 2, 2], // Escala
-            [0, moonRotation, 0], // Rotação
-            objTextures.moonDiffuse // Textura
+            [0, 2.5, -20],
+            [2.0, 2.0, 2.0],
+            [time * 0.1, time * 0.2, 0],
+            objTextures.moon
         );
-        
-        // Pedestal para a lua principal
-        drawPedestal([0, 0.5, -20], [2, 1, 2]);
-        
-        // Lua secundária esquerda
-        drawOBJModel(
-            objModels.moon,
-            [-12, 2.5, -25],
-            [1.5, 1.5, 1.5],
-            [time * 0.2, time * 0.4, 0],
-            objTextures.moonDiffuse
-        );
-        drawPedestal([-12, 0.5, -25], [1.5, 1, 1.5]);
-        
-        // Lua secundária direita
-        drawOBJModel(
-            objModels.moon,
-            [12, 2.5, -25],
-            [1.5, 1.5, 1.5],
-            [0, time * -0.3, time * 0.1],
-            objTextures.moonDiffuse
-        );
-        drawPedestal([12, 0.5, -25], [1.5, 1, 1.5]);
     }
     
-    // === BANCOS COM TEXTURA DE MADEIRA ===
+    // Escultura esquerda
+    drawPedestal([-8, 0.6, -10], [2, 1.2, 2], [0.88, 0.88, 0.88]);
+    if (objModels.sculpture1) {
+        drawOBJModel(
+            objModels.sculpture1,
+            [-8, 2.4, -10],
+            [1.5, 1.5, 1.5],
+            [0, time * 0.15, 0],
+            objTextures.sculpture1
+        );
+    }
     
-    drawBench([0, 0.4, 0], 4);
-    drawBench([-8, 0.4, 20], 3);
-    drawBench([8, 0.4, 20], 3);
-    drawBench([0, 0.4, -25], 5);
-    drawBench([-15, 0.4, -20], 3);
-    drawBench([15, 0.4, -20], 3);
+    // Escultura direita
+    drawPedestal([8, 0.6, -10], [2, 1.2, 2], [0.88, 0.88, 0.88]);
+    if (objModels.sculpture2) {
+        drawOBJModel(
+            objModels.sculpture2,
+            [8, 2.4, -10],
+            [1.5, 1.5, 1.5],
+            [0, time * -0.2, 0],
+            objTextures.sculpture2
+        );
+    }
     
-    // === ILUMINAÇÃO ===
+    // === BANCOS MINIMALISTAS ===
+    drawBench([0, 0.4, 10], 5);
+    drawBench([-10, 0.4, 18], 3);
+    drawBench([10, 0.4, 18], 3);
     
+    // === ILUMINAÇÃO AMBIENTE ===
     for (let i = 0; i < lightPositions.length; i++) {
-        drawObject(lightPositions[i], [0.3, 0.3, 0.3], [0, 0, 0], null, false, [1, 1, 0.9]);
-        drawObject([lightPositions[i][0], lightPositions[i][1] - 0.5, lightPositions[i][2]], 
-                   [0.5, 0.1, 0.5], [0, 0, 0], null, false, [1, 1, 0.7]);
+        // Fonte de luz sutil
+        drawObject(lightPositions[i], [0.4, 0.15, 0.4], [0, 0, 0], null, false, [1, 0.98, 0.9]);
     }
     
-    drawSpotLight([-15, 6, -29], [0, 0.8, 0.8]);
-    drawSpotLight([15, 6, -29], [0.8, 0.8, 0]);
-    drawSpotLight([-19, 5, 0], [0.8, 0.8, 0]);
-    drawSpotLight([19, 5, 0], [0.8, 0, 0.8]);
+    // Spots de destaque nas obras principais
+    drawSpotLight([0, 7, 0], [1, 1, 0.95]);       // Spot na obra central
+    drawSpotLight([0, 7, -20], [0.95, 0.95, 1]);  // Spot na lua
 }
 
-function drawFrame(pos, scale, color = [0.2, 0.15, 0.1]) {
-    drawObject(pos, scale, [0, 0, 0], null, false, color);
+/**
+ * Desenha um quadro com moldura
+ * Para paredes laterais, a escala deve ser [profundidade, altura, largura]
+ */
+function drawArtFrame(pos, scale, rot = [0, 0, 0]) {
+    const frameDepth = 0.08;
+    
+    // Desenha a moldura
+    drawObject(pos, scale, rot, null, false, [0.15, 0.12, 0.1]);
+    
+    // Calcular posição da arte baseado na rotação
+    let artPos = [...pos];
+    let artScale = [...scale];
+    
+    // Ajustar conforme a orientação do quadro
+    const rotY = rot[1];
+    
+    if (Math.abs(rotY - Math.PI/2) < 0.1) {
+        // Parede esquerda (rotação +90°)
+        artPos[0] += frameDepth;
+        artScale[0] *= 0.5;  // Reduz profundidade
+        artScale[1] *= 0.9;  // Mantém altura
+        artScale[2] *= 0.9;  // Reduz largura
+    } else if (Math.abs(rotY + Math.PI/2) < 0.1) {
+        // Parede direita (rotação -90°)
+        artPos[0] -= frameDepth;
+        artScale[0] *= 0.5;  // Reduz profundidade
+        artScale[1] *= 0.9;  // Mantém altura
+        artScale[2] *= 0.9;  // Reduz largura
+    } else {
+        // Parede do fundo (sem rotação)
+        artPos[2] += frameDepth;
+        artScale[0] *= 0.9;  // Reduz largura
+        artScale[1] *= 0.9;  // Reduz altura
+        artScale[2] *= 0.3;  // Reduz profundidade
+    }
+    
+    // Desenha a arte com textura
+    drawObject(artPos, artScale, rot, textures.art, true);
 }
 
-function drawPedestal(pos, scale, color = [0.6, 0.6, 0.6]) {
+/**
+ * Desenha um pedestal
+ */
+function drawPedestal(pos, scale, color = [0.9, 0.9, 0.9]) {
+    // Base do pedestal
     drawObject(pos, scale, [0, 0, 0], null, false, color);
+    
+    // Topo com destaque
+    const topPos = [pos[0], pos[1] + scale[1]/2 + 0.05, pos[2]];
+    const topScale = [scale[0] * 1.05, 0.1, scale[2] * 1.05];
+    drawObject(topPos, topScale, [0, 0, 0], null, false, [0.95, 0.95, 0.95]);
 }
 
 /**
@@ -561,16 +505,23 @@ function drawBench(pos, width) {
     
     // Pernas (madeira mais escura)
     const darkWood = [0.3, 0.2, 0.1];
-    drawObject([pos[0] - width/2 + 0.2, pos[1] - 0.2, pos[2] - 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
-    drawObject([pos[0] + width/2 - 0.2, pos[1] - 0.2, pos[2] - 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
-    drawObject([pos[0] - width/2 + 0.2, pos[1] - 0.2, pos[2] + 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
-    drawObject([pos[0] + width/2 - 0.2, pos[1] - 0.2, pos[2] + 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+    const legOffset = width/2 - 0.2;
+    drawObject([pos[0] - legOffset, pos[1] - 0.2, pos[2] - 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+    drawObject([pos[0] + legOffset, pos[1] - 0.2, pos[2] - 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+    drawObject([pos[0] - legOffset, pos[1] - 0.2, pos[2] + 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
+    drawObject([pos[0] + legOffset, pos[1] - 0.2, pos[2] + 0.3], [0.1, 0.4, 0.1], [0, 0, 0], null, false, darkWood);
 }
 
+/**
+ * Spot de luz decorativo
+ */
 function drawSpotLight(pos, color) {
-    drawObject(pos, [0.2, 0.2, 0.2], [0, 0, 0], null, false, color);
+    drawObject(pos, [0.3, 0.15, 0.3], [0, 0, 0], null, false, color);
 }
 
+/**
+ * Desenha um objeto (cubo básico)
+ */
 function drawObject(pos, scale, rot, texture, useTex, color = [1,1,1]) {
     const modelMatrix = mat4.create();
     mat4.translate(modelMatrix, modelMatrix, pos);
@@ -603,7 +554,10 @@ function drawObject(pos, scale, rot, texture, useTex, color = [1,1,1]) {
  * Desenha um modelo OBJ
  */
 function drawOBJModel(model, pos, scale, rot, texture, color = [1, 1, 1]) {
-    if (!model) return;
+    if (!model || !model.position) {
+        console.warn("⚠️ Modelo OBJ inválido ou não carregado");
+        return;
+    }
 
     const modelMatrix = mat4.create();
     mat4.translate(modelMatrix, modelMatrix, pos);
@@ -630,27 +584,28 @@ function drawOBJModel(model, pos, scale, rot, texture, color = [1, 1, 1]) {
 
     // Bind dos buffers do OBJ
     const posLoc = gl.getAttribLocation(program, "aPosition");
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.position);
-    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(posLoc);
+    if (posLoc >= 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.position);
+        gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(posLoc);
+    }
 
     const normalLoc = gl.getAttribLocation(program, "aNormal");
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.normal);
-    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(normalLoc);
+    if (normalLoc >= 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.normal);
+        gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(normalLoc);
+    }
 
     const uvLoc = gl.getAttribLocation(program, "aTexCoord");
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.uv);
-    gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(uvLoc);
-
-    // Desenhar
-    if (model.indices) {
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indices);
-        gl.drawElements(gl.TRIANGLES, model.indexCount, gl.UNSIGNED_SHORT, 0);
-    } else {
-        gl.drawArrays(gl.TRIANGLES, 0, model.count);
+    if (uvLoc >= 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.uv);
+        gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(uvLoc);
     }
+
+    // Desenhar (sempre sem índices na versão corrigida)
+    gl.drawArrays(gl.TRIANGLES, 0, model.count);
 }
 
 /**
