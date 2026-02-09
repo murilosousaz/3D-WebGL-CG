@@ -4,7 +4,6 @@
 
 [![WebGL](https://img.shields.io/badge/WebGL-2.0-990000?style=for-the-badge&logo=webgl)](https://www.khronos.org/webgl/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge&logo=javascript)](https://developer.mozilla.org/pt-BR/docs/Web/JavaScript)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 ---
 
@@ -466,31 +465,6 @@ http://localhost:8000
 
 ---
 
-## 📚 Documentação Adicional
-
-### Arquivos de Referência
-
-| Documento | Descrição |
-|-----------|-----------|
-| **QUICK_START.md** | Tutorial prático em 3 passos |
-| **LAYOUT_GUIDE.md** | Mapa completo da galeria com coordenadas |
-| **DEBUG_OBJ.md** | Guia completo de troubleshooting |
-| **FIX_QUADROS.md** | Explicação da correção dos quadros |
-
-### Ferramentas Úteis
-
-- **test_obj.html** - Validador visual de arquivos OBJ
-- **Console do Navegador (F12)** - Mensagens de debug
-- **WebGL Inspector** - Extensão para Chrome/Firefox
-
-### Tutoriais Externos
-
-- [WebGL Fundamentals](https://webglfundamentals.org/)
-- [Khronos WebGL Wiki](https://www.khronos.org/webgl/wiki/)
-- [Blender OBJ Export](https://docs.blender.org/manual/en/latest/addons/import_export/scene_obj.html)
-
----
-
 ## 🎨 Exportando Modelos do Blender
 
 ### Passo a Passo
@@ -562,36 +536,6 @@ artpiece.obj → Produto destaque
 
 ---
 
-## 🔍 FAQ (Perguntas Frequentes)
-
-### **P: Posso usar qualquer modelo 3D?**
-R: Sim, desde que seja formato OBJ. Modelos em FBX, GLTF, etc precisam ser convertidos.
-
-### **P: Qual o tamanho máximo de modelo?**
-R: Recomendamos < 50.000 vértices para performance em tempo real. Modelos maiores funcionam mas podem travar em dispositivos mais fracos.
-
-### **P: Preciso de texturas?**
-R: Não é obrigatório. Modelos sem textura renderizam com cor sólida.
-
-### **P: Como adiciono mais de 4 modelos?**
-R: Siga o template em `QUICK_START.md` para adicionar quantos modelos quiser.
-
-### **P: Funciona em mobile?**
-R: Funciona, mas controles touch não estão implementados. É otimizado para desktop.
-
-### **P: Posso vender projetos usando este código?**
-R: Sim, licença MIT permite uso comercial. Veja [LICENSE](LICENSE).
-
-### **P: Como adiciono som?**
-R: Use Web Audio API. Exemplo:
-```javascript
-const audio = new Audio('assets/ambient.mp3');
-audio.loop = true;
-audio.play();
-```
-
----
-
 ## 🎓 Conceitos Técnicos
 
 ### Arquitetura
@@ -648,5 +592,9 @@ Colisão quando todos os eixos se sobrepõem
 - Eduardo Matias
 - Lucas Emanuel
 - Murilo Sousa
+
+## Vídeo
+
+[YouTube](https://www.youtube.com/watch?v=eX9yc4hBetg)
 
 </div>
