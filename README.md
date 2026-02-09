@@ -80,42 +80,49 @@ Vídeo demo: [Execução trabalho Computação Gráfica 3D - YouTube](https://yo
 1. **Clone ou baixe o projeto**
    
    ```bash
-   git clone https://github.com/seu-usuario/galeria-3d.git
-   cd galeria-3d
+   git clone https://github.com/murilosousaz/3D-WebGL-CG.git
+   cd 3D-WebGL-CG
    ```
 
 2. **Estrutura básica de arquivos**
    
-   ```
-   galeria-3d/
-   ├── index.html
-   ├── js/
-   │   ├── main.js
-   │   ├── obj_loader.js
-   │   ├── camera.js
-   │   ├── geometry.js
-   │   ├── shader_loader.js
-   │   └── utils.js
-   ├── glsl/
-   │   ├── vertex.glsl
-   │   └── fragment.glsl
-   ├── assets/
-   │   ├── piso.jpg
-   │   ├── parede.jpg
-   │   ├── quadro.jpg
-   │   ├── madeira.jpg
-   │   ├── moon.obj
-   │   ├── moon_00_0.png
-   │   ├── sculpture1.obj       ⬅️ SEUS MODELOS
-   │   ├── sculpture1.png
-   │   ├── sculpture2.obj
-   │   ├── sculpture2.png
-   │   ├── artpiece.obj
-   │   └── artpiece.png
-   └── libs/
-    └── gl-matrix-min.js
-   ```
-
+```text
+3D-WebGL-CG/
+├── index.html
+├── glsl/
+│   ├── vertex.glsl
+│   └── fragment.glsl
+├── js/
+│   ├── main.js              # Loop principal, cena e renderização
+│   ├── camera.js            # Câmera FPS (yaw/pitch, WASD)
+│   ├── geometry.js          # Geometrias geradas em código (cubos, UVs)
+│   ├── obj_loader.js        # Loader manual de arquivos OBJ
+│   ├── shader_loader.js     # Compilação e linkagem dos shaders
+│   ├── utils.js             # Utilitários (buffers, texturas, atributos)
+│   ├── zip_loader.js        # Carregamento de assets compactados
+│   └── utils/
+│       └── gl-matrix.js     # Biblioteca matemática (vetores e matrizes)
+├── assets/
+│   ├── piso.jpg
+│   ├── parede.jpg
+│   ├── quadro.jpg
+│   ├── madeira.jpg
+│   ├── marmore.jpg
+│   ├── grama.jpg
+│   ├── tapete.jpg
+│   ├── moon.obj
+│   ├── moon.mtl
+│   ├── moon_00_0.png
+│   ├── sculpture1.obj
+│   ├── sculpture1.png
+│   ├── sculpture2.obj
+│   ├── sculpture2.png
+│   ├── artpiece.obj
+│   └── artpiece.png
+├── README.md
+├── package.json
+└── package-lock.json
+```
 3. **Inicie um servidor local**
 
 **Opção 1 - Python 3:**
@@ -158,23 +165,6 @@ npx http-server -p 8000
 | **geometry.js**      | Geometrias básicas (cubo)               |
 | **shader_loader.js** | Carregador de shaders GLSL              |
 | **utils.js**         | Funções utilitárias (texturas, buffers) |
-
-### Arquivos de Configuração
-
-| Arquivo             | Descrição                             |
-| ------------------- | ------------------------------------- |
-| **README.md**       | Este arquivo (documentação principal) |
-| **QUICK_START.md**  | Guia rápido em 3 passos               |
-| **LAYOUT_GUIDE.md** | Mapa visual da galeria                |
-| **DEBUG_OBJ.md**    | Troubleshooting de modelos OBJ        |
-| **FIX_QUADROS.md**  | Correção dos quadros nas paredes      |
-
-### Ferramentas
-
-| Arquivo           | Descrição                           |
-| ----------------- | ----------------------------------- |
-| **test_obj.html** | 🔍 Validador visual de arquivos OBJ |
-
 ---
 
 ## 🎮 Controles
