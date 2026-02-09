@@ -18,9 +18,6 @@ Vídeo demo: [Execução trabalho Computação Gráfica 3D - YouTube](https://yo
 - [🎯 Adicionando Seus Modelos OBJ](#-adicionando-seus-modelos-obj)
 - [🔧 Configuração Avançada](#-configuração-avançada)
 - [🛠️ Troubleshooting](#️-troubleshooting)
-- [📚 Documentação Adicional](#-documentação-adicional)
-- [🤝 Contribuindo](#-contribuindo)
-- [📄 Licença](#-licença)
 
 ---
 
